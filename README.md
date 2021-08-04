@@ -12,7 +12,7 @@ Calibration data or metadata should be stored in /calib/. Subfolders should be u
 
 If you are cloning the repository for the first time, rename _config.py to config.py and update its contents with your own details.
 To access the shared configurations, modules and libs, suggested code for the top of your scripts:
-```
+```python
 import sys
 sys.path.append('../../') # this should point to the top level directory
 from setup import *
