@@ -38,3 +38,5 @@ Common global configuration variables are defined in the setup.py file. If you d
 
 [Github Desktop](https://desktop.github.com/)
 
+[Object Oriented Programming in Python help](https://www.programiz.com/python-programming/object-oriented-programming)
+
