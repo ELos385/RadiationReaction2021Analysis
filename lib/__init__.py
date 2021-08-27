@@ -11,11 +11,11 @@ def base_path():
 
 import sys
 sys.path.append('../../')
-from RR2021.paths import *
+from setup import *
 from .pipeline import DataPipeline
 from .loader import register_data_loader, ImageDataLoader, LundatronLoader, GCamDataLoader
 
-BASE_PATH = DATA_FOLDER
+BASE_PATH = ROOT_DATA_FOLDER
 
 def configure(base_path):
     """Select the base path for data storage. This path should contain one
@@ -31,4 +31,4 @@ register_data_loader('espec1', ImageDataLoader)
 register_data_loader('espec2', ImageDataLoader)
 register_data_loader('SideShamrock', ImageDataLoader)
 register_data_loader('GammaProfile', ImageDataLoader)
-register_data_loader('F40Leakage', GCamDataLoader)
+register_data_loader('f2focus', GCamDataLoader)

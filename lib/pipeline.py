@@ -22,6 +22,7 @@ def _process(path, data_loader, map_func):
     # This is the worker function that executes on the other threads/processes
 
     data = data_loader.load_data(path)
+    print(path)
     if data is not None:
         return map_func(data)
 
