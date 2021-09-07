@@ -201,11 +201,12 @@ def normalise(I):
 
 class  Read_SQL_shot_summary:
     def __init__(self):
-        self.sql_path = DATA_PATH / 'data.sqlite'
+        #self.sql_path = DATA_PATH / 'data.sqlite'
+        self.sql_path = str(DATA_PATH) + '/' +  'data.sqlite'
 
     def get_all(self):
         with sqlite3.connect(self.sql_path) as conn:
-            result =  pd.read_sql_query(f"select * from shot_summary where run = '{run_name}'",conn)
+            result =  pd.read_sql_query(f"select * from shot_summary",conn)
         return result
 
     def get_run(self,run_name, burst=None):

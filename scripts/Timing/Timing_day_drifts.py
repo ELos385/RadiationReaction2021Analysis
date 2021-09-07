@@ -12,8 +12,10 @@ from modules.Timing.Timing import *
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.constants import c
-from os import listdir
 
+from datetime import datetime as dt   
+
+#%%
 """
 delay = Timing()
 
@@ -55,5 +57,29 @@ uni_rs = list(np.unique(rs))
 colours = np.array([uni_rs.index(r) % len(colors) for r in rs], dtype=int)
 colours = np.array(colors)[colours]
 
+plt.figure()
 plt.scatter(np.arange(len(ss)), delays, marker='x', color=colours)
+plt.xlabel('Shot #'), plt.ylabel('Delay [fs]'), plt.title(date)
+
+# get time of shot        
+sql = Read_SQL_shot_summary()
+sql_data = sql.get_all()
+sql_dt_format = "%Y-%m-%d %H:%M:%S.%f"
+
+runs_sql_format = [date + '/' + r for r in rs]
+timestamps = []
+for idx, r in enumerate(runs_sql_format):
+    ts = np.nan
+    
+    try:
+        ids = (sql_data['run']==r) & (sql_data['shot_or_burst']==str(ss[idx]))
+        timestamp = np.array(sql_data[ids]['timestamp'])[0]
+        ts = dt.strptime(timestamp, sql_dt_format)
+    except(IndexError):
+        print('Failed for %s %s' % (r, ss[idx]))
+    
+    timestamps.append(ts)
+
+plt.figure()
+plt.scatter(timestamps, delays, marker='x', color=colours)
 plt.xlabel('Shot #'), plt.ylabel('Delay [fs]'), plt.title(date)
