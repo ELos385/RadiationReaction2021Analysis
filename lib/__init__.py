@@ -15,6 +15,7 @@ from setup import *
 from .pipeline import DataPipeline
 from .loader import register_data_loader, ImageDataLoader, LundatronLoader, GCamDataLoader
 from .folder_tools import get_dirs
+from .sql_tools import get_sql_data
 
 BASE_PATH = ROOT_DATA_FOLDER
 

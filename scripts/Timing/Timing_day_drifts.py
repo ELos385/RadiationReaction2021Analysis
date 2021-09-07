@@ -7,16 +7,15 @@ from setup import *
 from lib.pipeline import *
 from lib.general_tools import *
 from lib.folder_tools import *
+from lib.sql_tools import *
 from modules.Timing.Timing import *
 
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.constants import c
 
-from datetime import datetime as dt   
-
 #%%
-"""
+
 delay = Timing()
 
 #%%
@@ -45,41 +44,48 @@ for run in runs:
 rs = np.array(rs)
 ss = np.array(ss)
 delays = np.array(delays)
-"""
-#%%
-plt.figure()
 
-prop_cycle = plt.rcParams['axes.prop_cycle']
-colors = prop_cycle.by_key()['color']
-
-uni_rs = list(np.unique(rs))
-
-colours = np.array([uni_rs.index(r) % len(colors) for r in rs], dtype=int)
-colours = np.array(colors)[colours]
-
-plt.figure()
-plt.scatter(np.arange(len(ss)), delays, marker='x', color=colours)
-plt.xlabel('Shot #'), plt.ylabel('Delay [fs]'), plt.title(date)
-
-# get time of shot        
-sql = Read_SQL_shot_summary()
-sql_data = sql.get_all()
-sql_dt_format = "%Y-%m-%d %H:%M:%S.%f"
 
 runs_sql_format = [date + '/' + r for r in rs]
-timestamps = []
-for idx, r in enumerate(runs_sql_format):
-    ts = np.nan
-    
-    try:
-        ids = (sql_data['run']==r) & (sql_data['shot_or_burst']==str(ss[idx]))
-        timestamp = np.array(sql_data[ids]['timestamp'])[0]
-        ts = dt.strptime(timestamp, sql_dt_format)
-    except(IndexError):
-        print('Failed for %s %s' % (r, ss[idx]))
-    
-    timestamps.append(ts)
+gsns, timestamps = get_sql_data(runs_sql_format, ss)
 
+#%%
+
+# reorganise following gsn
+all_data = np.array([gsns, timestamps, rs, ss, delays]).T
+all_data = all_data[all_data[:, 0].argsort()]
+gsns, timestamps, rs, ss, delays = all_data.T
+
+# use colours to identify unique runs
+prop_cycle = plt.rcParams['axes.prop_cycle']
+colors = prop_cycle.by_key()['color']
+uni_rs = list(np.unique(rs))
+colours_idx = np.array([uni_rs.index(r) % len(colors) for r in rs], dtype=int)
+colours = np.array(colors)[colours_idx]
+
+# plot against gsn
+plt.figure()
+plt.scatter(gsns, delays, marker='x', color=colours)
+plt.xlabel('GSN'), plt.ylabel('Delay [fs]'), plt.title(date)
+plt.grid()
+
+
+N_run_mean = 5
+run_mean = np.convolve(delays, np.ones(N_run_mean)/N_run_mean, mode='same')
+delta = np.abs(delays - run_mean)
+percentile_threshold = 99 # %
+ids = ~(delta > np.percentile(delta, percentile_threshold))
+N_run_mean = 5
+run_mean = np.convolve(delays[ids], np.ones(N_run_mean)/N_run_mean, mode='same')
+plt.plot(gsns[ids], run_mean, 'k')
+
+
+
+
+
+# plot against time to account for drifts over dinner etc.
 plt.figure()
 plt.scatter(timestamps, delays, marker='x', color=colours)
-plt.xlabel('Shot #'), plt.ylabel('Delay [fs]'), plt.title(date)
+plt.xlabel('Timestamp'), plt.ylabel('Delay [fs]'), plt.title(date)
+plt.xlim((timestamps.min(), timestamps.max()))
+plt.grid()
