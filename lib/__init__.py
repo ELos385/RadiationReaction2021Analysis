@@ -14,6 +14,7 @@ sys.path.append('../../')
 from setup import *
 from .pipeline import DataPipeline
 from .loader import register_data_loader, ImageDataLoader, LundatronLoader, GCamDataLoader
+from .folder_tools import get_dirs
 
 BASE_PATH = ROOT_DATA_FOLDER
 
@@ -32,3 +33,4 @@ register_data_loader('espec2', ImageDataLoader)
 register_data_loader('SideShamrock', ImageDataLoader)
 register_data_loader('GammaProfile', ImageDataLoader)
 register_data_loader('f2focus', GCamDataLoader)
+register_data_loader('LA3timing', ImageDataLoader)

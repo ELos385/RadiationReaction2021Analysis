@@ -3,3 +3,6 @@ __pycache__/
 *.pyc
 local/
 /config.py
+.DS_Store
+modules/.DS_Store
+scripts/.DS_Store

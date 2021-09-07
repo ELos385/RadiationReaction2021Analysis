@@ -5,3 +5,4 @@
 
 ROOT_DATA_FOLDER = '<YOUR DATA PATH>';
 FAILED_SAVES_FOLDER = '<YOUR failed saves FOLDER>';
+HOME = '<YOUR RadiationReaction2021Analysis FOLDER>';
