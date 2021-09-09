@@ -10,7 +10,7 @@ import sys
 sys.path.append('../..')
 sys.path.append('../')
 
-from RR2021.general_tools import load_object
+from lib.general_tools import load_object
 
 espec1_screen_to_jet=1.74
 print(espec1_screen_to_jet)

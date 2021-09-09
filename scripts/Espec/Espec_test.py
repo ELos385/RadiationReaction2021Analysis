@@ -13,7 +13,7 @@ from modules.Espec.Espec import *
 
 # start with an example shot - same workflow as used in LivePlotting
 
-date = '20210618'
+date = '20210610'
 run = 'run18'
 shot='Shot020'
 
