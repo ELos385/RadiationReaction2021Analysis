@@ -1,4 +1,3 @@
-
 import numpy as np
 import cv2
 import matplotlib.pyplot as plt
@@ -68,7 +67,7 @@ class Espec_proc():
         self.dE_MeV = np.mean(np.diff(self.eAxis_MeV))
 
 
-    def espec_warp(self,img_raw):
+    def espec_warp(self, img_raw):
         """ calc transformed image using tForm file and cv2 perspective transform
         """
         img = self.espec_background_sub(img_raw)

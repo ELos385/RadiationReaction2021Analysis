@@ -79,7 +79,7 @@ class Espec:
             return None   
         
         # setup espec processor
-        eSpec_proc = espec_processing.ESpec_high_proc(tForm_filepath,Espec_cal_filepath,
+        eSpec_proc = espec_processing.Espec_proc(tForm_filepath,Espec_cal_filepath,
                              img_bkg=img_bkg,use_median=True,kernel_size=None )
         self.eSpec_proc = eSpec_proc
 
