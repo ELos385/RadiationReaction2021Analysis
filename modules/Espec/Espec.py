@@ -92,6 +92,8 @@ class Espec:
         # energy markers
         spec_x_mm = eSpec_proc.spec_x_mm.flatten()
         spec_MeV = eSpec_proc.spec_MeV.flatten()
+        
+        # xp = x_MeV_cal(Ep)
         x_MeV_cal = interp1d(spec_MeV, spec_x_mm, kind='linear', copy=True, bounds_error=False, fill_value=np.nan)
         E_labels = np.arange(400,1501,100)
         x_labels= x_MeV_cal(E_labels)
@@ -110,6 +112,13 @@ class Espec:
         
         self.yaxis = [(0, self.y_mm[0]), (len(self.y_mm), self.y_mm[-1])]
         self.p_labels = p_labels
+        
+        # inverse of above - Ep = MeV_x_cal(xp)
+        Mev_x_cal = interp1d(spec_x_mm, spec_MeV, kind='linear', copy=True, bounds_error=False, fill_value=np.nan)
+        self.x_MeV = Mev_x_cal(self.x_mm)
+
+        # to add
+        #self.y_mrad = 
 
     def get_image(self,path):
         img_raw = self.get_raw_image(path)
@@ -129,4 +138,9 @@ class Espec:
         img_pCpermm2 = self.get_image(path)
         total_pC = np.sum(img_pCpermm2)*self.dx*self.dy
         print(total_pC)
+        return total_pC
+
+    def get_total_charge_from_im(self,img_raw):
+        img_pCpermm2 = self.eSpec_proc.espec_data2screen(img_raw)
+        total_pC = np.sum(img_pCpermm2)*self.dx*self.dy
         return total_pC
