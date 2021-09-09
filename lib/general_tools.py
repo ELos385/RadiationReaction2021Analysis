@@ -78,7 +78,7 @@ def choose_cal_file(run_name,shot,diag,file_pref,cal_data_path=None):
 
     dts_checked = []
     for c_path in cal_paths:
-        print('c_path: ', c_path)
+        # print('c_path: ', c_path)
         c_path_dt, c_path_run_num, c_path_shot_num =get_cal_path_info(c_path,file_pref=file_pref)
         pre_data = is_arg1_geq_arg2((run_dt, run_num, shot ),
                                     (c_path_dt, c_path_run_num, c_path_shot_num ))

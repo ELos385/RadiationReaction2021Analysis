@@ -69,7 +69,7 @@ plt.scatter(gsns, delays, marker='x', color=colours)
 plt.xlabel('GSN'), plt.ylabel('Delay [fs]'), plt.title(date)
 plt.grid()
 
-
+# fit trend
 N_run_mean = 5
 run_mean = np.convolve(delays, np.ones(N_run_mean)/N_run_mean, mode='same')
 delta = np.abs(delays - run_mean)
@@ -78,8 +78,6 @@ ids = ~(delta > np.percentile(delta, percentile_threshold))
 N_run_mean = 5
 run_mean = np.convolve(delays[ids], np.ones(N_run_mean)/N_run_mean, mode='same')
 plt.plot(gsns[ids], run_mean, 'k')
-
-
 
 
 
