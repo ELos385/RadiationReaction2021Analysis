@@ -25,9 +25,9 @@ filepath = ROOT_DATA_FOLDER + '/' + diag + '/' +  date + '/' + run +'/' + shot +
 drs = date + run + shot
 
 delay = Timing()
-im = example.get_raw_img(filepath)
+im = delay.get_raw_img(filepath)
 
-d = example.get_delay_from_image(filepath)
+d = delay.get_delay_from_path(filepath)
 str_d = ('%.0f' % d) +' fs'
 
 plt.figure()
@@ -52,26 +52,3 @@ plt.figure()
 plt.plot(shot_num_delay, delay_data, '.-')
 plt.title('%s/%s'%(date, run)), plt.xlabel('Shot #'), plt.ylabel('Delay [fs]')
 plt.grid()
-
-
-#%%
-# Grab entire data of diagnostic from given DAY to see long term drifts
-diag_timing='LA3timing'
-
-runs = get_dirs(diag_timing, date)
-
-rs = []
-ss = []
-delays = []
-
-for run in runs:
-    delay_pipeline = DataPipeline(diag_timing, delay.get_delay_from_img, single_shot_mode=True)
-    shot_num_delay, delay_data = delay_pipeline.run('%s/%s'%(date, run))
-    delay_data = list(delay_data)
-    
-    [rs.append(run) for i in delay_data]
-    ss += shot_num_delay
-    delays += delay_data
-
-#%%
-    
