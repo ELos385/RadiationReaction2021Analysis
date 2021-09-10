@@ -5,8 +5,23 @@ points marked on ref images for tForm files
 import numpy as np
 
 # # first is (x,y) in pixels, and second is (x, y) physcially on ruler in mm
+espec1_ref_points = {
+        # n.b. this ref image looks left-right flipped compared to all others
+        # maybe we only had 1 mirror here compared with later?
+        '20210427': np.array([[1238, 175], [10, 0],
+                     [1173, 1095], [150, 0],
+                     [1113, 2004], [280, 0],
+                     [1587, 1838], [260, 76.5],
+                     [1623, 1187], [170, 76.5],
+                     [1688, 91], [10, 76.5]
+                     ])
+}
+
+
 
 espec2_ref_points = {
+        # n.b. this ref image looks left-right flipped compared to all others
+        # maybe we only had 1 mirror here compared with later?
         '20210428':
                     np.array([[135, 1342], [290, 0],
                      [1280, 1333], [150, 0],
@@ -44,7 +59,16 @@ espec2_ref_points = {
                      [1365, 880], [150, 59],
                      [271, 859], [20, 59]
                      ]
-                    )
+                    ),
+        
+        '20210623':
+                    np.array([[166, 1312], [10, 0],
+                     [1313, 1331], [150, 0],
+                     [2465, 1350], [290, 0],
+                     [2502, 923], [290, 59],
+                     [1316, 905], [150, 59],
+                     [131, 887], [10, 59]
+                     ]
+                    )   
 }
-    
     

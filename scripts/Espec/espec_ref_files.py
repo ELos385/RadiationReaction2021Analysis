@@ -1,7 +1,54 @@
 #espec_ref_files.py
 """
 variable that points to the correct ref file for different days of shooting. 
+
+espec1_ref_files 
+espec2_ref_files
 """
+espec1_ref_files = {
+                # calibrations files
+                '20210427':
+                            [
+                                    {'filepath': [
+                                               '20210427_example1.tif',
+                                               '20210427_transfrom_calib_image.tif',
+                                                ]
+                                    }
+                            ],
+
+                '20210511':
+                            [
+                                    {'filepath': [
+                                               '20210511_transform_calib_image.tif'
+                                                ]
+                                    }
+                            ],
+                
+                
+                
+                
+                '20210622':
+                            [
+                                    {'filepath': [
+                                               '20210622_65_sec_exposure.tiff'
+                                                ]
+                                    }
+                            ],    
+                                    
+                '20210623':
+                            [
+                                    {'filepath': [
+                                               '20210623_greenstrip_charge_calibration.tiff',
+                                               '20210623_greenstrip_charge_calibration_exposuire_0pt001_ND2.tiff',
+                                               '20210623_greenstrip_charge_calibration_exposuire_0pt001_no_ND.tiff'
+                                                ]
+                                    }
+                            ]
+                
+}                       
+
+
+
 
 espec2_ref_files = {
                 # calibrations files
@@ -27,12 +74,22 @@ espec2_ref_files = {
                 '20210512':
                             [
                                     {'filepath': [
-                                               'espec2_20210512_transform_calib_image.tif'
+                                               'espec2/20210623/20210623_greenstrip_charge_calibration_ND2_exposuire_0pt001.tiff',
+                                               'espec2/20210623/20210623_greenstrip_charge_calibration_no_exposuire_0pt001.tiff',
+                                               'espec2/20210623/20210623_greenstrip_charge_calibration.tiff'
                                                 ]
                                     }
                             ],    
-                                    
-        
+                        
+                # decommisioning refs
+                '20210623':
+                            [
+                                    {'filepath': [
+                                               'espec2_20210512_transform_calib_image.tif'
+                                                ]
+                                    }
+                            ],             
+
         
                 # ref files
                 '20210505':
@@ -500,5 +557,5 @@ espec2_ref_files = {
                                                 'Shot001+4.tif'
                                                 ]
                                     },        
-                            ]          
+                            ]                
 }

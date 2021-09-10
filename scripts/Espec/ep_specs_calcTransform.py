@@ -37,24 +37,27 @@ def espec_warp(img, tform):
     
 # mark points for calculating transform
     
-diag = 'espec2'
-from espec_ref_files import espec2_ref_files
+diag = 'espec1'
+from espec_ref_files import espec1_ref_files, espec2_ref_files
+espec_ref_files = espec1_ref_files
 ref_files = []
 
-date = '20210622a'
+date = '20210511'
 
 
-for run in espec2_ref_files[date]:
-        run_name  = list(run.keys())[0]
-        if run_name=='filepath':
+for run in espec_ref_files[date]:
+    # run is then a dict
+    run_names = list(run.keys())
+    for rn in run_names:
+        if rn=='filepath':
             # points to actual calib files
-            shot_list = run[run_name]
+            shot_list = run[rn]
             shot_list = [ROOT_DATA_FOLDER + '/../calibrations/' + diag + '/' + shot for shot in shot_list]
             ref_files += shot_list
         else:
             # points to shots from Mirage data folder
-            shot_list = run[run_name]
-            shot_list = [ROOT_DATA_FOLDER + '/' + diag + '/' + date + '/' + run_name + '/' + shot for shot in shot_list]
+            shot_list = run[rn]
+            shot_list = [ROOT_DATA_FOLDER + '/' + diag + '/' + date + '/' + rn + '/' + shot for shot in shot_list]
             ref_files += shot_list
 
 
@@ -66,22 +69,19 @@ imgP_pix, imgP_real = [[]], [[]]
 # mark on points - comment out if unsure
 # first is (x,y) in pixels, and second is (x, y) physcially on ruler in mm
 
-
-imgP_pix_real = np.array([[220, 1281], [10, 0],
-                     [1361, 1306], [150, 0],
-                     [2507, 1328], [280, 0],
-                     [2461, 902], [280, 59],
-                     [1365, 880], [150, 59],
-                     [271, 859], [20, 59]
-                     ]
-                    )
-
+imgP_pix_real = np.array([[1235, 360], [40, 0],
+                     [1181, 1088], [150, 0],
+                     [1121, 1994], [280, 0],
+                     [1603, 1759], [250, 76.5],
+                     [1640, 1181], [170, 76.5],
+                     [1702, 51], [5, 76.5]
+                     ])
 
 
 imgP_pix, imgP_real =  imgP_pix_real[::2], imgP_pix_real[1::2]
 
 plt.figure()
-plt.imshow(img, vmax=2000)
+plt.imshow(img, vmax=5000)
 plt.title('%s' % (date))
 plt.plot(imgP_pix[:,0],imgP_pix[:,1],'r+')
 
@@ -89,7 +89,7 @@ plt.plot(imgP_pix[:,0],imgP_pix[:,1],'r+')
 
 # size of physical range covered in picture
 # nominal values to cover the lanex only would be to
-xRange, yRange = 300, 59 
+xRange, yRange = 300, 76.5 
 
 #xRange =400
 #yRange = 106

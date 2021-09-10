@@ -39,8 +39,8 @@ def espec_warp(img, tform):
 # inspect a shot
 
 diag = 'espec2'
-date = '20210513'
-run = 'run10'
+date = '20210614'
+run = 'run12'
 shot = 'Shot006'
 file_ext = '.tif'
 
@@ -52,7 +52,7 @@ spec = Espec(date+'/'+run,shot_num=1,img_bkg=None,diag=diag)
 filepath = ROOT_DATA_FOLDER + '/%s/%s/%s/%s%s' % (diag, date, run, shot, file_ext)
 img = imread(filepath)
 
-tForm_filepath = choose_cal_file(date+'/'+run, shot, diag, diag+'_big_transform', cal_data_path=HOME + '/calib/')
+tForm_filepath = choose_cal_file(date+'/'+run, shot, diag, diag+'_transform', cal_data_path=HOME + '/calib/')
 
 # check transform is correct by seeing whole image
 tForm = load_object(tForm_filepath)
@@ -66,7 +66,7 @@ im_out2 = espec_warp(img, tForm)
 x_mm = tForm['x_mm']
 y_mm = tForm['y_mm']
 plt.imshow(im_out2,extent=(x_mm.min(), x_mm.max(), y_mm.max(), y_mm.min()),
-           vmax=100)
+           vmax=10)
 x_low, x_high = 0.0, 250.0
 y_low, y_high = 0.0, 59.0
 plt.plot([x_low, x_low, x_high, x_high], [y_low, y_high, y_high, y_low], 'r+')
@@ -87,7 +87,7 @@ file_ext = '.tif'
 all_dates = all_dates_clipped
 all_runs = all_runs_clipped
 
-date_to_choose = '20210519'
+date_to_choose = '20210608'
 
 vmax= 10
 # iterate over all shots that day - plot for a random shot
