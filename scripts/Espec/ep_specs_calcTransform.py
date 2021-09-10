@@ -41,7 +41,7 @@ diag = 'espec2'
 from espec_ref_files import espec2_ref_files
 ref_files = []
 
-date = '20210520'
+date = '20210622a'
 
 
 for run in espec2_ref_files[date]:
@@ -64,38 +64,15 @@ img = np.mean(ref_files, axis=0)
 imgP_pix, imgP_real = [[]], [[]]
 
 # mark on points - comment out if unsure
-    # first is (x,y) in pixels, and second is (x, y) physcially on ruler in mm
+# first is (x,y) in pixels, and second is (x, y) physcially on ruler in mm
 
-"""
-# 20210428
-imgP_pix_real = np.array([[135, 1342], [290, 0],
-                     [1280, 1333], [150, 0],
-                     [2426, 1324], [10, 0],
-                     [2461, 895], [10, 59],
-                     [1280, 907], [150, 59],
-                     [100, 920], [290, 59]
-                     ]
-                    )
-"""
 
-"""
-# 20210505
-imgP_pix_real = np.array([[125, 1308], [10, 0],
-                     [1434, 1324], [170, 0],
-                     [2410, 1330], [290, 0],
-                     [2452, 906], [290, 59],
-                     [1272, 898], [150, 59],
-                     [90, 884], [10, 59]
-                     ]
-                    )
-"""
-# 20210513
-imgP_pix_real = np.array([[306, 1273], [10, 0],
-                     [1445, 1305], [150, 0],
-                     [2506, 1328], [280, 0],
-                     [2545, 901], [280, 59],
-                     [1198, 871], [120, 59],
-                     [277, 852], [10, 59]
+imgP_pix_real = np.array([[220, 1281], [10, 0],
+                     [1361, 1306], [150, 0],
+                     [2507, 1328], [280, 0],
+                     [2461, 902], [280, 59],
+                     [1365, 880], [150, 59],
+                     [271, 859], [20, 59]
                      ]
                     )
 
@@ -104,7 +81,7 @@ imgP_pix_real = np.array([[306, 1273], [10, 0],
 imgP_pix, imgP_real =  imgP_pix_real[::2], imgP_pix_real[1::2]
 
 plt.figure()
-plt.imshow(img, vmax=200)
+plt.imshow(img, vmax=2000)
 plt.title('%s' % (date))
 plt.plot(imgP_pix[:,0],imgP_pix[:,1],'r+')
 
@@ -176,7 +153,7 @@ plt.figure()
 im_out2=espec_warp(img, tForm)
 plt.imshow(im_out2,extent= (np.min(x_mm), np.max(x_mm), np.max(y_mm), np.min(y_mm)))
 plt.plot(imgP_real[:,0],imgP_real[:,1],'r+')
-plt.title('%s %s %s - Transformed' % (date, run, shot))
+plt.title('%s- Transformed' % (date))
 
 
 #%%
