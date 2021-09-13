@@ -7,7 +7,7 @@
 import numpy as np
 from scipy.constants import pi,c,alpha,m_e
 from scipy.signal import medfilt
-from lib import moments_2d
+from lib.moments_2d import find_width
 	
 def spot_filtering(im,medfiltwidth=5,threshold=1):
 	"""
@@ -23,7 +23,7 @@ def get_vardiff(im,rad_per_px):
 	"""
 	Find the difference in spot width vertically and horizontally
 	"""
-	xw,yw = moments_2d.findwidth(im)
+	xw,yw = find_width(im)
 	vardiff = np.abs(xw**2-yw**2)*rad_per_px**2
 
 	return vardiff
@@ -52,9 +52,9 @@ class a0_Estimator:
 	Class for estimating a0
 	Currently only contains the constructor and one method:
 
-	get_a0(self,im) : reads an image and estimates the a0 from the
-			 difference between the spot width
-			 horizontally and vertically
+	get_vardiff(self,im) : reads an image and finds the difference
+			 between the spot width horizontally and
+			 vertically
 	"""
 	# Initialise
 	def __init__(self, wavelength=0.8e-6, FWHM_t=40.0e-15, medfiltwidth=5, threshold=1, rad_per_px=None):
@@ -64,11 +64,8 @@ class a0_Estimator:
 		self.threshold = threshold
 		self.rad_per_px = rad_per_px
 	
-	# Estimate a0
-	def get_a0(self,im):
+	def get_vardiff(self,im):
 		imout = spot_filtering(im, medfiltwidth=self.medfiltwidth, threshold=self.threshold)
 		vardiff = get_vardiff(imout,self.rad_per_px)
-		a0 = a0_estimate_av(vardiff,gammai,gammaf)
-		
-		return a0
+		return vardiff
 
