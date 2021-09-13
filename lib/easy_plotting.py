@@ -19,7 +19,7 @@ from . import live_plotting
 import numpy as np
 import pyqtgraph as pg
 from pyqtgraph.dockarea import DockArea, Dock
-from RR2021.general_tools import save_object, load_object
+from lib.general_tools import save_object, load_object
 
 URL_REGEX = re.compile(r'\w+://')
 
