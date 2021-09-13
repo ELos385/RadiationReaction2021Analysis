@@ -7,8 +7,10 @@
 
 import numpy as np
 
-# Return vectors containing the nth moments taken along each axis
 def moments_2d(Arr,n):
+	"""
+	Return vectors containing the nth moments taken along each axis
+	"""
 	x = np.arange(Arr.shape[0])
 	y = np.arange(Arr.shape[1])
 	X,Y = np.meshgrid(x,y,indexing='ij')
@@ -18,8 +20,11 @@ def moments_2d(Arr,n):
 	
 	return xmoment,ymoment
 	
-# Estimate the weighted mean center of a spot using the 1st moment
 def find_center(Arr):
+	"""
+	Estimate the weighted mean center of a spot using the 1st
+	moment
+	"""
 	x0,y0 = moments_2d(Arr,0)
 	x1,y1 = moments_2d(Arr,1)
 	
@@ -28,8 +33,10 @@ def find_center(Arr):
 	
 	return np.array([xc,yc])
 	
-# Estimate the spot width using the 2nd moment
 def find_width(Arr):
+	"""
+	Estimate the spot width using the 2nd moment
+	"""
 	x0,y0 = moments_2d(Arr,0)
 	x1,y1 = moments_2d(Arr,1)
 	x2,y2 = moments_2d(Arr,2)
