@@ -42,7 +42,7 @@ from espec_ref_files import espec1_ref_files, espec2_ref_files
 espec_ref_files = espec1_ref_files
 ref_files = []
 
-date = '20210511'
+date = '20210622'
 
 
 for run in espec_ref_files[date]:
@@ -69,19 +69,18 @@ imgP_pix, imgP_real = [[]], [[]]
 # mark on points - comment out if unsure
 # first is (x,y) in pixels, and second is (x, y) physcially on ruler in mm
 
-imgP_pix_real = np.array([[1235, 360], [40, 0],
-                     [1181, 1088], [150, 0],
-                     [1121, 1994], [280, 0],
-                     [1603, 1759], [250, 76.5],
-                     [1640, 1181], [170, 76.5],
-                     [1702, 51], [5, 76.5]
+imgP_pix_real = np.array([[1243, 104], [10, 0],
+                     [1177, 1019], [150, 0],
+                     [1111, 2000], [290, 0],
+                     [1588, 1840], [270, 76.5],
+                     [1635, 970], [150, 76.5],
+                     [1693, 10], [10, 76.5]
                      ])
-
 
 imgP_pix, imgP_real =  imgP_pix_real[::2], imgP_pix_real[1::2]
 
 plt.figure()
-plt.imshow(img, vmax=5000)
+plt.imshow(img, vmax=7000)
 plt.title('%s' % (date))
 plt.plot(imgP_pix[:,0],imgP_pix[:,1],'r+')
 
