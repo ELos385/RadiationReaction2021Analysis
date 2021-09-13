@@ -164,26 +164,4 @@ plt.title('%s- Transformed' % (date))
 
 
 #%%
-# save transform file if happy
-
-# desired tform details
-fname_diag = diag #+ '_big'
-date = date
-run = 'run01'
-shot = 'shot001'
-
-tForm_filedir = HOME + '/calib/' + diag + '/'
-tForm_filename = '%s_transform_%s_%s_%s.pkl' % (fname_diag, date, run, shot)
-tForm_filepath = tForm_filedir + tForm_filename
-
-check = input("Save tform file as %s \nin %s \ny or n? " % (tForm_filename, tForm_filedir))
-
-if check=='y':
-    save_object(tForm, tForm_filepath)
-    print('saved: ', tForm_filepath)
-else:
-    print('not saved.')
-
-
-#%%
 plt.show()
