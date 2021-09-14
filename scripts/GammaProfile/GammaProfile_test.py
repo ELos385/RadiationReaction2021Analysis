@@ -13,7 +13,7 @@ from modules.GammaProfile.a0_estimate import a0_Estimator, a0_estimate_av
 from calib.GammaProfile import rad_per_px
 
 date= '20210620'
-run= 'run09subset'
+run= 'run09'
 
 tForm_filepath = HOME + 'calib/espec1/espec1_transform_20210621_run01_shot001.pkl'
 Espec_cal_filepath = HOME + 'calib/espec1/espec1_disp_cal_20210527_run01_shot001.mat'
@@ -33,3 +33,4 @@ a0_pipeline = DataPipeline(gamma_profile,a0_Est.get_vardiff, single_shot_mode=Tr
 shot_num, vardiff_data = a0_pipeline.run('%s/%s'%(date, run))
 
 a0_data = a0_estimate_av(vardiff_data,gammai,gammaf)
+
