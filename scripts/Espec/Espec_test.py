@@ -36,6 +36,8 @@ fig, axes = plt.subplots(2,1)
 
 fig2, axes2 = plt.subplots(2,1, sharex=True)
 
+screen_distances = [1740.0, 2300.0]
+
 for idx, spec in enumerate(specs): 
     filepath = ROOT_DATA_FOLDER + '/' + spec.diag + '/' +  date + '/' + run +'/' + shot + file_ext
     im = spec.get_image(filepath)
@@ -52,6 +54,10 @@ for idx, spec in enumerate(specs):
 
     # try plotting w.r.t energy axis instead
     x, y = spec.x_MeV, spec.y_mm
+    y = y/screen_distances[idx]
+    
+    y -= np.nanmean(y)
+    
     cols = ~np.isnan(x)
     axes2[idx].pcolormesh(x[cols], y, im[:, cols])
 
