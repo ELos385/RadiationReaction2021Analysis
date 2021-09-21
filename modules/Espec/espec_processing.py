@@ -207,13 +207,13 @@ class Espec_proc():
         mean_div_y_mrad = np.trapz(img_charge_dist*div_y_mrad, div_y_mrad)
         var_div_y_mrad_sqrd= np.trapz(img_charge_dist*div_y_mrad**2, div_y_mrad)-mean_div_y_mrad**2
         return var_div_y_mrad_sqrd**0.5
-    
+
     def off_axis_tilt(self,img_raw):
         """ Returns beam divergence in y (non-dispersed axis)
         """
         img_pC_permm2 = self.espec_data2screen(img_raw)
         Ny,Nx = np.shape(img_pC_permm2)
-        
+
         y = self.screen_y_mm/self.screen_dist_m#np.arange(Ny)
         x = self.screen_x_mm/self.screen_dist_m#np.arange(Nx)
         img_centre_y=np.mean(y)
@@ -222,7 +222,7 @@ class Espec_proc():
         xy_fit_coeffs=np.polyfit(x, img_pC_permm_y, 1)
         yfit=xy_fit_coeffs[1]+xy_fit_coeffs[0]*x
         angle_to_horz=np.arctan((np.amax(yfit)-np.amin(yfit))/(np.amax(x)-np.amin(x)))
-        
+
         mean_pos_y=np.trapz(np.trapz(img_pC_permm2, x, axis=1)*y, y)/np.trapz(np.trapz(img_pC_permm2, y, axis=0), x)
         return x, yfit, angle_to_horz*1000.0, (mean_pos_y-img_centre_y)
 
