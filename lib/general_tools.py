@@ -4,6 +4,7 @@ import pandas as pd
 import pickle, os, sqlite3
 from glob import glob
 from datetime import datetime
+from scipy.linalg import lstsq
 import sys
 sys.path.append('../../')
 from setup import *
@@ -41,6 +42,20 @@ def imagesc(I,ax = None,  x=None, y=None, **kwargs):
     ext = (x[0], x[-1], y[-1], y[0])
     return ax.imshow(I, extent=ext, aspect='auto', **kwargs)
 ### functions for determining which calibration file to use
+
+def calc_2D_4th_order_polyfit(X_interpolate, Y_interpolate, image_no_filters, x_bounds, y_bounds):
+    x_fit=np.linspace(x_bounds[0], x_bounds[1], int(abs(x_bounds[0]-x_bounds[1])))
+    y_fit=np.linspace(y_bounds[0], y_bounds[1], int(abs(y_bounds[0]-y_bounds[1])))
+    X_fit, Y_fit=np.meshgrid(x_fit, y_fit)
+
+    # best-fit quartic curve
+    A = np.c_[np.ones(X_interpolate.shape[0]), X_interpolate, Y_interpolate, X_interpolate**2, X_interpolate*Y_interpolate, Y_interpolate**2, X_interpolate**3, X_interpolate**2*Y_interpolate, X_interpolate*Y_interpolate**2, Y_interpolate**3, X_interpolate**4, X_interpolate**3*Y_interpolate, X_interpolate**2*Y_interpolate**2, X_interpolate*Y_interpolate**3, Y_interpolate**4]
+    C,_,_,_ = lstsq(A, image_no_filters)
+
+    # evaluate it on a grid
+    Z = C[0]+C[1]*X_fit+C[2]*Y_fit+C[3]*X_fit**2+C[4]*X_fit*Y_fit+C[5]*Y_fit**2+C[6]*X_fit**3+C[7]*X_fit**2*Y_fit+C[8]*X_fit*Y_fit**2+C[9]*Y_fit**3+C[10]*X_fit**4+C[11]*X_fit**3*Y_fit+C[12]*X_fit**2*Y_fit**2+C[13]*X_fit*Y_fit**3+C[14]*Y_fit**4
+
+    return Z, X_fit, Y_fit
 
 def get_eSpec_Calib_paths(diag, date):
     ''' Returns paths of energy and charge calibration files given the
