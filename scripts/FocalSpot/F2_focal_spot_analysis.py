@@ -13,9 +13,6 @@ import scipy.optimize as opt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from scipy.constants import c
 
-def get_img(img):
-    return img
-
 #'20210603', '20210604', '20210614', '20210617', '20210618', '20210620', '20210621', '20210622'
 
 date= '20210618'

@@ -17,8 +17,9 @@ date = '20210618'
 run = 'run18'
 shot='Shot020'
 
+
 espec_diag_names = ['espec1', 'espec2']
-file_ext = '.tif'
+
 
 
 # make objects for holding espec analysis data
@@ -85,3 +86,4 @@ plt.figure()
 plt.plot(shot_num, charge, '.-')
 plt.title('%s/%s'%(date, run)), plt.xlabel('Shot #'), plt.ylabel('Total Charge [pC]')
 plt.grid()
+
