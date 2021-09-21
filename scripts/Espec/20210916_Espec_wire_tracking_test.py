@@ -1,7 +1,16 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
+This script iterates the find_wire_shadows algorithm over a run of shots.
+This is done for a fixed set of analysis parameters in the hope that the 
+over the vast number of shots it is bound to work for some.
 
+Function plots the results as a suspected 'good fitting' which if demmed true,
+the shadow data can be saved by the final part of the script.
+
+A good fitting is one where the wires are appropriately spaced to know none have
+been missed, and where there are the same number of wires identified on both 
+espec1 and espec2
 
 Created on Thu Sep 16 11:43:03 2021 by Cary Colgan. 
 Email: cary.colgan13@imperial.ac.uk

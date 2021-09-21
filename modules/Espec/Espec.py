@@ -124,11 +124,12 @@ class Espec:
         img_raw = self.get_raw_image(path)
         if hasattr(self, 'eSpec_proc'):
             img_pCpermm2 = self.eSpec_proc.espec_data2screen(img_raw)
-            return img_pCpermm2
+            return img_pCpermm2.T
 
         else:
             # if something has failed, then default to raw img
-            return img_raw
+            print('raw_img, not img_pCpermm2 returned')
+            return img_raw.T
 
     def get_raw_image(self, path):
         img_raw = imread(path)
