@@ -51,7 +51,7 @@ charge=-1.0
 #run= 'run18'
 
 date='20210621'
-run= 'run23'
+run= 'run20'
 
 #### replace DATA_FOLDER ####
 run_name = date+'/run99'
