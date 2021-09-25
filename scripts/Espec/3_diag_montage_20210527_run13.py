@@ -311,64 +311,9 @@ for i in range(len(specs)):
 
 plt.ylim((300, 1850))
 
-#%%
-
-
-
-
-import pandas as pd
-
-run_name = '20210527/run12'
-sScale = [500,25000,400000,0.1]
-
-
-# copy from Jupyter Notebooks
-data_file = '/Volumes/Backup2/2021_Radiation_Reaction/Automation/Outputs/LWFA_GP_20210527_run12.txt'
-opt_df = pd.read_csv(data_file,index_col=False,delim_whitespace=True)
-data_file = '/Volumes/Backup2/2021_Radiation_Reaction/Automation/Outputs/LWFA_GP__20210527_run12_model.txt'
-model_df = pd.read_csv(data_file,index_col=False,delim_whitespace=True)
-
-
-
-parameters = opt_df.keys()[2:-2]
-opt_flag = []
-for key in parameters:
-    x = opt_df[key].values
-    if len(np.unique(x))>1:
-        opt_flag.append(1)
-    else:
-        opt_flag.append(0)
-        
-
-
-param_list = ['o2','o3','o4','focus','astig0','astig45','coma0','coma90','spherical','target_z']
-
-
-
-pLabels = [r'$\beta^{(2)}$' + '\n' + r'[$10^3$ fs$^2$]', r'$\beta^{(3)}$' + '\n' + r'[$10^4$ fs$^3$]',
-           r'$\beta^{(4)}$' + '\n' + r'[$10^5$ fs$^4$]', r'$f$' + '\n' + r'[mm]', r'astig0',r'astig45',
-           r'coma45',r'coma90',r'spherical',
-           r'$Z$' + '\n' + r'[mm]']
-
-
-pScale = [1e3,1e4,1e5,1,1,1,1,1,1,1]
-
-sScale = [sScale[n] for n in range(len(sScale)) if opt_flag[n]>0]
-parameters = [param_list[n] for n in range(len(param_list)) if opt_flag[n]>0]
-pLabels = [pLabels[n] for n in range(len(pLabels)) if opt_flag[n]>0]
-pScale = [pScale[n] for n in range(len(pScale)) if opt_flag[n]>0]
-
-p0 = opt_df[parameters].values[0]
-
-fig = plt.figure(figsize=(8,5),dpi=150)
-
-
-fig,axs = correlationPlot_mod(opt_df,parameters,pScale,fig=fig, cmap='viridis',
-                              p0 = None, pLabels=None,xlims=None,ylims=None)
-fig.subplots_adjust(left=0.15, bottom=0.2, right=0.6, top=0.95, wspace=0.025, hspace=0.025)
 
 #%%
-
+# prep data
 points = [shocks_pos, 
           focal_stats[:, -2], # o
           focal_stats[:, -1], # frac
@@ -401,3 +346,64 @@ fig,axs = correlationPlot_mod(df,parameters,pScale,fig=fig, cmap=cmap,
 
 fig.subplots_adjust(left=0.15, bottom=0.2, right=0.6, top=0.95, wspace=0.025, hspace=0.025)
 fig.suptitle('%s %s' % (date, run))
+
+#%%
+# TRY STUART'S BOOTSTRAPPING TECHNIQUE
+import random 
+
+all_data = np.array([points[0], points[2]]).T
+
+good_set = all_data[narrows]
+
+null_ids = np.arange(len(all_data))
+for i in narrows[::-1]:
+    null_ids = np.delete(null_ids, i, axis=0)
+null_set = all_data[null_ids]
+
+cov = np.cov(good_set[:,0], good_set[:,1])
+P_to_beat = cov[0, 1]/np.sqrt(cov[0, 0] * cov[1, 1])
+print('P_to_beat', P_to_beat)
+
+cov = np.cov(null_set[:,0], null_set[:,1])
+general_P = cov[0, 1]/np.sqrt(cov[0, 0] * cov[1, 1])
+print('general_P', general_P)
+
+N = 5 #= len(narrows) # 5
+
+N_trials = 100000
+P = []
+
+for idx_n in range(N_trials):    
+    #test = [random.choice(null_ids) for i in range(N)] # tested, this is definitely a uniform choice
+    test = [random.choice(null_set) for i in range(N)]
+    test = np.array(test)
+    
+    cov = np.cov(test[:,0], test[:,1])
+    pearson = cov[0, 1]/np.sqrt(cov[0, 0] * cov[1, 1])
+    P.append(pearson)
+    
+P = np.array(P)
+
+plt.figure()
+plt.scatter(x=np.arange(len(P)), y=P, marker='o')
+plt.axhline(y=0, color='k', ls='--')
+plt.axhline(y=P_to_beat, color='r', ls='--')
+
+#plt.figure()
+#plt.hist(test, bins=np.arange(50)+0.5)
+
+N_beaten = np.sum([1 for i in P if i <= P_to_beat])
+
+frac = N_beaten / N_trials
+err = N_trials**(-0.5)
+
+from scipy.special import erf
+x = np.linspace(0,5,1000)
+perc = erf(x / 2**0.5)
+n_sigma = np.interp(frac, 1-perc[::-1], x[::-1]) #must be strictly increasing in dependent
+
+print('frac_over: ', frac, ' ± ', err)
+print('equivalent to ', n_sigma, 'o. Tested on ', N_trials, ' trials')
+
+
+
