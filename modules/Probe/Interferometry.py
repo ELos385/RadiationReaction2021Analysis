@@ -1,5 +1,6 @@
 from config import *
 import numpy as np
+import matplotlib.pyplot as plt
 
 from lib.general_tools import *
 from skimage.io import imread
@@ -8,6 +9,8 @@ import abel
 from skimage.restoration import unwrap_phase
 from skimage.transform import rotate
 from scipy import constants
+
+from scipy.optimize import curve_fit
 
 class Interferometry:
     def __init__(self,run_name=None,shot_num=1,cal_data_path=HOME+'/calib/Probe',diag='LMI'):
@@ -24,23 +27,29 @@ class Interferometry:
             if cal_data_path is not None:
                 self.cal_file_grab()
         
+        self.reset()
+        
         # some funcitonality varies between different version of abel
         self.abel_version = str(abel.__version__)
         
     def setup_proc(self):
         # default options
         nrows, ncols = 492, 656 # standard Manta chip
-        self.reset()
         
         # default options overwritten by ana_settings file
         self.ana_settings_path = None
+        self.ana_settings_loaded = {}
         self.channel_roi = [0, nrows, 0, ncols] #subsection referenced from fringes_roi
         self.fringes_roi = [0, nrows, 0, ncols]
         self.fourier_mask = np.ones((nrows, ncols))
+        self.phase = np.zeros((nrows, ncols))
         self.channel_mask = np.ones_like(self.phase)
         self.raw_img_extent = [0, ncols, nrows, 0]  # extent=[xmin, xmax, ymax, ymin])
         self.fringes_img_extent = [0, ncols, nrows, 0]
-         
+        self.fringes_img_extent_mm = [0, ncols, nrows, 0]
+        self.raw_img = np.full((nrows, ncols), fill_value=np.nan)
+        self.raw_img_x_mm = np.arange(ncols)
+        self.raw_img_y_mm = np.arange(nrows)
         self.ref_shots = []      # add in shot references - default empty list
         self.ref_raw_imgs = None
 
@@ -54,24 +63,27 @@ class Interferometry:
         self.apply_no_ref_correction = False
         self.n_std_threshold = 0.75
         self.invert_phase = False
-		
+        
+        self.fixed_channel_centre = False		
 		
         # constants for integration
         self.lambda_0 = 800.0 * 1e-9
         self.m_e = constants.m_e
         self.e = constants.e
         
-
         
     def reset(self):
         """Clean slate between grabbing shot data
+        Changed so doesn't reset any vars set by ana_settings
         """
         # set up placeholder defaults 
         nrows, ncols = 492, 656 # standard Manta chip
         self.raw_img = np.full((nrows, ncols), np.nan)
-        self.raw_img_x_mm = np.arange(ncols)
-        self.raw_img_y_mm = np.arange(nrows)
+        #self.raw_img_x_mm = np.arange(ncols)
+        #self.raw_img_y_mm = np.arange(nrows)
         
+        left, right, bottom, top = self.fringes_img_extent
+        nrows, ncols = bottom - top, right - left
         self.fringes_img = np.full((nrows, ncols), np.nan)
         self.phase_original = np.full((nrows, ncols), np.nan)
         self.phase = np.full((nrows, ncols), np.nan)
@@ -82,8 +94,8 @@ class Interferometry:
         self.channel_offset = np.nan        
 
         self.ne_lineout = np.full((ncols), np.nan)  
-        self.ne_x_mm = np.arange(ncols) * 1.0
-        self.ne_y_mm = np.arange(nrows) * 1.0        
+        #self.ne_x_mm = np.arange(ncols) * 1.0
+        #self.ne_y_mm = np.arange(nrows) * 1.0        
     
     def cal_file_grab(self):
         # read in ana_settings
@@ -96,6 +108,7 @@ class Interferometry:
             print('ana_settings file chosen is: ', t)
             self.ana_settings_path = t    
             ana_settings = load_object(t)
+            self.ana_settings_loaded = dict(ana_settings)
             
             for key, value in ana_settings.items():
                 # overwrite placeholders with values in pickle file
@@ -104,15 +117,30 @@ class Interferometry:
             if self.ref_shots != []:
                 self.ref_raw_imgs = self.get_ref_images(self.ref_shots)
 
-            self.raw_img_x_mm = np.copy(self.raw_img_x_mm * self.umperpixel)*1e-3
-            self.raw_img_y_mm = np.copy(self.raw_img_y_mm * self.umperpixel)*1e-3
+            dx_mm = self.umperpixel*1e-3
+            self.raw_img_x_mm = np.copy(self.raw_img_x_mm) * dx_mm
+            self.raw_img_y_mm = np.copy(self.raw_img_y_mm) * dx_mm
 
-            t, b, l, r = self.fringes_roi
-            nrows, ncols = b-t, r-l
+            top, bottom, left, right = self.fringes_roi
+            self.fringes_img_extent = [left, right, bottom, top]
+            self.fringes_img_extent_mm = np.array([left, right, bottom, top]) * dx_mm            
+            #print('self.fringes_roi', self.fringes_roi)
+            #print('self.fringes_extent', self.fringes_img_extent)
+            
+            nrows, ncols = bottom-top, right-left
             self.ne = np.full((nrows, ncols), np.nan)
-            self.ne_x_mm = np.arange(ncols) * self.umperpixel * 1e-3
-            self.ne_y_mm = np.arange(nrows) * self.umperpixel * 1e-3
-
+            self.ne_x_mm = np.arange(left,right) * dx_mm
+            self.ne_y_mm = np.arange(top,bottom) * dx_mm
+            
+            """
+            dx_mm = self.umperpixel * 1e-3
+            self.fringes_img_extent_mm = np.copy(self.fringes_img_extent) * dx_mm
+            l,r,b,t = np.copy(self.fringes_img_extent)
+            print('self.fringes_img_extent', self.fringes_img_extent)
+            
+            self.ne_x_mm = np.arange(l,r) * dx_mm
+            self.ne_y_mm = np.arange(b,t) * dx_mm
+            """
             
         except (IndexError, ValueError) as e:
             print(e)
@@ -197,7 +225,7 @@ class Interferometry:
         """raw image cropped to just where fringes are. also changes fringes_img_extent
         """
         top, bottom, left, right = self.fringes_roi
-        self.fringes_img_extent = [left, right, bottom, top]
+        #self.fringes_img_extent = [left, right, bottom, top]
         Z = np.copy(raw_img)
         Z = Z[top:bottom, left:right]
         if overwrite:
@@ -433,6 +461,7 @@ class Interferometry:
         
         if len(x[ids])==0:
             print('Channel angle fitting only attempted once, n_std threshold (%s) could be too small' % (n_std_threshold))
+            
             return theta, c, x, yc
 
         x = x[ids]
@@ -486,7 +515,10 @@ class Interferometry:
             
             else:
                 # old done using version 0.8.3
-                centre_x, centre_y = abel.tools.center.find_center_by_convolution(phase_roi)
+                #centre_x, centre_y = abel.tools.center.find_center_by_convolution(phase_roi)
+                centre_x, _ = abel.tools.center.find_center_by_convolution(phase_roi)
+                # looks to be a - b here? maybe just a fluke
+                _, centre_y = abel.tools.center.find_center_by_gaussian_fit(phase_roi)
                 
             centre = (centre_x, centre_y)
             
@@ -544,6 +576,8 @@ class Interferometry:
         
         ne = ne.T
         
+        ne[ne==0.0] = np.nan
+        
         if overwrite:
             self.ne = np.copy(ne)
             
@@ -578,12 +612,53 @@ class Interferometry:
         
         channel_theta, channel_offset, _, _ = self.calc_channel_angle()
         self.phase = self.rotate_image(self.phase, channel_theta)
+        
+        if self.fixed_channel_centre != False:
+            self.centre = self.fixed_channel_centre
+        else:
+            self.calc_phase_centre()
+        self.phase_to_SI()
+        self.abel_invert_int_ne_dl()
+        
+        return np.copy(self.ne.T)
+    
+
+    def get_ne_from_img(self, img):
+        """For use with data Pipeline
+        """
+        self.reset()
+        
+        self.raw_img = np.array(img, dtype=float)
+        
+        if np.all(np.isnan(self.raw_img)):
+            # no file found - ignore the rest
+            return np.copy(self.ne.T)
+            
+        self.get_fringe_image(self.raw_img)
+        
+        self.calc_phase(self.fringes_img, ref_raw_imgs=self.ref_raw_imgs)
+
+        self.calc_channel_mask()
+        if self.apply_no_ref_correction:
+            self.no_ref_correction()
+        
+        if self.invert_phase==True:
+            # override attempt if unreliable
+            phase = np.copy(self.phase)
+            phase = -1.0 * phase
+            self.phase = np.copy(phase)
+        else:
+            self.correct_phase_polarity()
+        
+        channel_theta, channel_offset, _, _ = self.calc_channel_angle()
+        self.phase = self.rotate_image(self.phase, channel_theta)
 
         centre = self.calc_phase_centre()
         self.phase_to_SI()
         self.abel_invert_int_ne_dl()
-
+        
         return np.copy(self.ne.T)
+        
     
     def get_channel_info(self, path):
         """Only do up to the channel angle retrieval
@@ -630,9 +705,43 @@ class Interferometry:
         nrows, ncols = ne.shape
         mid = nrows // 2
         hw = channel_width // 2
-        ne_lineout = np.nanmean( ne[mid-hw:mid+hw, :], axis=0)
+        
+        avg = np.nanmean(ne[mid - hw: mid + hw, :], axis=0)
+        top = np.nanmean(ne[mid - hw: mid, :], axis=0)
+        bottom = np.nanmean(ne[mid: mid+hw, :], axis=0)
+        
+        #ne_lineout = np.nanmean( ne[mid-hw:mid+hw, :], axis=0)
 
-        return ne_lineout
+        return np.array([avg, top, bottom])
+    
+    
+    def get_ne_lineout_from_img(self, img):
+        """Return 1d average lineout of density
+        """
+        self.reset()
+        
+        self.get_ne_from_img(img)
+        
+        ne = np.copy(self.ne)
+        channel_width = np.copy(self.channel_width)
+        nrows, ncols = ne.shape
+        mid = nrows // 2
+        hw = channel_width // 2
+        
+        avg = np.nanmean(ne[mid - hw: mid + hw, :], axis=0)
+        top = np.nanmean(ne[mid - hw: mid, :], axis=0)
+        bottom = np.nanmean(ne[mid: mid+hw, :], axis=0)
+        
+        #ne_lineout = np.nanmean( ne[mid-hw:mid+hw, :], axis=0)
+
+        return np.array([avg, top, bottom])
+    
+    def get_img_from_img(self, img):
+        """Test for DataPipeline
+        """
+        self.reset()
+        
+        return img
     
     
     def get_phase_map(self, path):
@@ -663,8 +772,60 @@ class Interferometry:
         else:
             self.correct_phase_polarity()
         
-        return phase.T
+        return self.phase.T
+
+
+    def Gauss_1D(self, x, mu, o, A, c):
+            return A * np.exp( - 0.5 * (x-mu)**2 / o**2) + c
+    
+    def get_guass_fit_ne(self, path, plotter=True):
+        """Fits ne to guass in vertical axis. 
         
+        ne is cropped to only include channel and averaged over whole channel
+        to give size in y
+        """
+        
+        self.reset()
+        self.get_ne(path)
+        ne_crop = np.copy(self.ne)
+        
+        x = self.ne_y_mm
+        
+        ne_plateau = np.nanpercentile(ne_crop, 95)
+        ne_crop[ne_crop < 0.05 * ne_plateau] = np.nan
+        y = np.nanmean(ne_crop,axis=1)
+        
+        # could be all nans if no image found
+        if np.all(np.isnan(y)):
+            popt = [np.nan]*4
+            perr = [np.nan]*4
+            return popt, perr     
+        
+        # give some initial guesses
+        c = np.nanmin(y)
+        A = np.nanmax(y) - c
+        mu = np.nansum(x * y) / np.nansum(y)
+        o = (np.nansum(y * (x-mu)**2)/np.nansum(y))**(0.5)
+        p0 = [mu, o, A, c]
+        ids = np.isfinite(y)
+     
+        popt, pcov = curve_fit(self.Gauss_1D, x[ids], y[ids], p0)
+        perr = np.diagonal(pcov)**(0.5)
+                      
+        if plotter == True:
+            plt.figure()
+            plt.imshow(ne_crop), plt.title('Cropped $n_e$')
+            
+            plt.figure()
+            plt.plot(x,y)
+            plt.title('Fitted vertical channel')
+            dx = np.linspace(np.min(x), np.max(x), 100)
+            plt.plot(dx, self.Gauss_1D(dx, *popt), 'r--')
+        
+        return popt, perr        
+        
+        
+
 
     def save_ana_settings(self):
         filedir = self.cal_data_path + '/' + self.diag + '/'
@@ -678,7 +839,7 @@ class Interferometry:
         list_of_ana_settings = ['umperpixel', 'fringes_roi', 'fourier_mask',
                                 'channel_roi', 'channel_width', 'ref_shots', 'apply_no_ref_correction',
                                 'centre_method', 'inversion_method', 'shift_in', 'shift_out', 'n_std_threshold',
-                                'invert_phase']
+                                'invert_phase', 'fixed_channel_centre']
         
         for key in list_of_ana_settings:
             if hasattr(self, key):

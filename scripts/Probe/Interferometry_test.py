@@ -1,4 +1,4 @@
-#Espec_test.py
+#Interferometry_test.py
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -13,18 +13,18 @@ from modules.Probe.Interferometry import *
 
 # start with an example shot - same workflow as used in LivePlotting
 
-date = '20210621'
-run = 'run04'
-
-#date = '20210520'
+#date = '20210621'
 #run = 'run04'
 
-shot = 7 #shot='Shot002'
+date = '20210622'
+run = 'run09'
+
+shot = 143 #shot='Shot002'
 file_ext = '.TIFF'
 
 # get the analysis object
 diag = 'LMI'
-run_name = date+'/run99'
+run_name = date+'/' + 'run11'
 LMI = Interferometry(run_name,shot_num=1,diag=diag)
 
 
@@ -38,6 +38,10 @@ extent = LMI.raw_img_extent
 
 plt.figure()
 plt.imshow(im, extent=extent)
+t,b,l,r = LMI.fringes_roi
+plt.plot([l, r, r, l, l], [t, t, b, b, t], 'y-')
+
+
 
 
 theta, offset = LMI.get_channel_info(filepath)
@@ -59,32 +63,28 @@ plt.colorbar(cax)
 #%%
 ne = LMI.get_ne(filepath).T
 #extent = LMI.raw_img_extent
+extent = LMI.fringes_img_extent_mm
 
 plt.figure()
-plt.imshow(ne)# extent=extent)
+cax = plt.imshow(ne, extent=extent)
+plt.title(date + run + 'Shot'+ str(shot))
+plt.colorbar(cax)
 plt.show()
 
-"""
-n_e_channel = LMI.get_ne_lineout(filepath)
+#LMI.channel_width = 5
+ne_lineouts = LMI.get_ne_lineout(filepath)
+x = LMI.ne_x_mm
 plt.figure()
-plt.plot(n_e_channel)
-"""
-nrows, ncols = ne.shape
-midrow = nrows // 2
-cw = 7
 
-avg = np.nanmean(ne[midrow - cw: midrow + cw, :], axis=0)
-top = np.nanmean(ne[midrow - cw: midrow, :], axis=0)
-bottom = np.nanmean(ne[midrow: midrow+cw, :], axis=0)
-
-plt.figure()
-plt.plot(avg, label='Average')
-plt.plot(top, label='Top')
-plt.plot(bottom, label='Bottom')
-plt.legend()
+lineObj = plt.plot(x, ne_lineouts.T)
+plt.legend(lineObj, ('Average', 'Top', 'Bottom'))
 plt.grid()
 plt.ylabel('$n_e$ [cm$^{-3}$]')
-plt.xlabel('pixels')
+plt.xlabel('$x$ [mm]')
+
+
+popt, perr = LMI.get_guass_fit_ne(filepath, plotter=True)
+
 
 #%%
 plt.show()

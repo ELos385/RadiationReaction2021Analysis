@@ -73,3 +73,55 @@ def get_sql_data(dateruns, shots):
             print('Failed for %s %s' % (r, s))
         
     return gsns, timestamps
+
+def get_gsn(daterunshot):
+    """Find gsn of a shot in the format daterunshot as one string, e.g.
+    20210609run04Shot002
+    """
+    sql = Read_SQL_shot_summary()
+    sql_data = sql.get_all()
+    sql_dt_format = "%Y-%m-%d %H:%M:%S.%f"
+    
+    daterun, s = daterunshot.split('Shot')
+    s = str(int(s)) # strip leading '0's
+    d, r = daterun.split('run')
+    r = 'run' + r
+    
+    dr = d + '/' + r
+    
+    gsn = np.nan
+    try:
+        ids = (sql_data['run']==dr) & (sql_data['shot_or_burst']==s)
+        gsn = np.array(sql_data[ids]['gsn'])[0]
+        gsn = int(gsn)
+    except(IndexError):
+            # happens if there no entry satisfied clause for ids
+            print('Failed for %s %s' % (dr, s))
+    
+    return gsn
+
+def get_timestamp(daterunshot):
+    """Find gsn of a shot in the format daterunshot as one string, e.g.
+    20210609run04Shot002
+    """
+    sql = Read_SQL_shot_summary()
+    sql_data = sql.get_all()
+    sql_dt_format = "%Y-%m-%d %H:%M:%S.%f"
+    
+    daterun, s = daterunshot.split('Shot')
+    s = str(int(s)) # strip leading '0's
+    d, r = daterun.split('run')
+    r = 'run' + r
+    dr = d + '/' + r
+    
+    timestamp = np.nan
+    try:
+        ids = (sql_data['run']==dr) & (sql_data['shot_or_burst']==s)
+        timestamp = np.array(sql_data[ids]['timestamp'])[0]
+        timestamp = dt.strptime(timestamp, sql_dt_format)
+        
+    except(IndexError):
+            # happens if there no entry satisfied clause for ids
+            print('Failed for %s %s' % (dr, s))
+    
+    return timestamp
