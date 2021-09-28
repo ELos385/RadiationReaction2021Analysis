@@ -14,9 +14,10 @@ def spot_filtering(im,medfiltwidth=5,threshold=1):
 	"""
 	Despeckle an image and remove a constant background
 	"""
-	despeckled = medfilt(im,kernel_size=medfiltwidth)
-	bg = np.median(despeckled)
-	imout = despeckled - threshold*bg
+	sz = int(2*np.floor(medfiltwidth/2)+1) # Make sure sz is odd
+	despeckled = medfilt(im,kernel_size=sz)
+	bg = threshold*np.median(despeckled)
+	imout = despeckled - bg
 
 	return imout	
 
