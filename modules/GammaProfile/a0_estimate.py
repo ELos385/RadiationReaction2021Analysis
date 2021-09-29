@@ -6,7 +6,7 @@
 
 import numpy as np
 from scipy.constants import pi,c,alpha,m_e
-from scipy.signal import medfilt,convolve2d
+from scipy.ndimage import median_filter,convolve
 from lib.moments_2d import find_width
 from lib.contour_ellipse import contour_ellipse
 	
@@ -15,7 +15,7 @@ def spot_filtering(im,medfiltwidth=5,threshold=1,smoothwidth=0):
 	Despeckle an image and remove a constant background
 	"""
 	sz = int(2*np.floor(medfiltwidth/2)+1) # Make sure sz is odd
-	despeckled = medfilt(im,kernel_size=sz)
+	despeckled = median_filter(im,size=sz,mode='nearest')
 	bg = threshold*np.median(despeckled)
 	imout = despeckled - bg
 
@@ -25,7 +25,7 @@ def spot_filtering(im,medfiltwidth=5,threshold=1,smoothwidth=0):
 		[X,Y] = np.meshgrid(x,x)
 		R = np.sqrt(X**2+Y**2)
 		kernel = np.interp(R,x,kernel1d,right=0)
-		imout = convolve2d(imout,kernel,mode='same')
+		imout = convolve(imout,kernel,mode='nearest')
 
 	return imout	
 
@@ -69,7 +69,7 @@ class a0_Estimator:
 		imout = spot_filtering(im, medfiltwidth=self.medfiltwidth, 
 								threshold=self.threshold, 
 								smoothwidth=self.smoothwidth)
-		[major,minor,x0,y0,phi] = contour_ellipse(im, level, 
+		[major,minor,x0,y0,phi] = contour_ellipse(imout, level, 
 									debug=True)
 		vardiff = np.abs(major**2-minor**2) / (-2*np.log(level)) 
 		return vardiff*self.rad_per_px**2

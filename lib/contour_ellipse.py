@@ -13,26 +13,30 @@ from glob import glob
 
 def plot_contour_ellipse(im,contours,ellipse):
 	"""
-	Plots the contour and the fitted ellipse on top of the image
+	Plots the contour and the fitted ellipse on top of the image im
+	contours is an array [x,y] of the contour coordinates
+	ellipse is an array [major,minor,x0,y0,phi] of ellipse parameters
 	"""
 
-	fig, ax = plt.subplots()
+	files = glob("contourFit*.png")
+	fname = "contourFit%i.png" % len(files)
+	fig, ax = plt.subplots(num=len(files))
 
-	plt.imshow(im/np.max(im),cmap='plasma',vmin=0)
+	ax.imshow(im,cmap='plasma',vmin=0,vmax=np.max(im))
+	print('Max: ',np.max(im))
+
 	[x,y] = contours
-	plt.plot(x,y,'.',zorder=50)
+	ax.plot(x,y,'.',zorder=50)
 
-	print(ellipse)
+	print('Ellipse:', ellipse)
 	[major,minor,x0,y0,phi] = ellipse
 	ellipse_obj = Ellipse((x0, y0), major*2, minor*2, (180/np.pi)*phi, 
 		            facecolor='none',edgecolor='green',linestyle='-', 
 		            zorder=100)
 	ax.add_patch(ellipse_obj)
 	
-	files = glob("contourFit*.png")
-	fname = "contourFit%i.png" % len(files)
-	plt.savefig(fname)
-	plt.close()
+	fig.savefig(fname)
+	plt.close(fig)
 
 	return fname
 
