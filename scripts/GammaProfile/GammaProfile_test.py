@@ -16,10 +16,10 @@ from modules.GammaProfile.a0_estimate import a0_Estimator
 from calib.GammaProfile import rad_per_px
 
 date= '20210620'
-run= 'run09subset'
+run= 'run09'
 filename = 'a0_testcontour_'+date+'_'+run
 
-tForm_filepath = HOME + 'calib/espec1/espec1_transform_20210621_run01_shot001.pkl'
+tForm_filepath = HOME + 'calib/espec1/espec1_transform_20210622_run01_shot001.pkl'
 Espec_cal_filepath = HOME + 'calib/espec1/espec1_disp_cal_20210527_run01_shot001.mat'
 
 gamma_profile='GammaProfile'

@@ -69,8 +69,7 @@ class a0_Estimator:
 		imout = spot_filtering(im, medfiltwidth=self.medfiltwidth, 
 								threshold=self.threshold, 
 								smoothwidth=self.smoothwidth)
-		[major,minor,x0,y0,phi] = contour_ellipse(imout, level, 
-									debug=True)
+		[major,minor,x0,y0,phi] = contour_ellipse(imout, level)
 		vardiff = np.abs(major**2-minor**2) / (-2*np.log(level)) 
 		return vardiff*self.rad_per_px**2
 
