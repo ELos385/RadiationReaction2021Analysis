@@ -20,12 +20,13 @@ def plot_contour_ellipse(im,contours,ellipse):
 
 	plt.imshow(im/np.max(im),cmap='plasma',vmin=0)
 	[x,y] = contours
-	plt.plot(x,y,'.')
+	plt.plot(x,y,'.',zorder=50)
 
 	print(ellipse)
 	[major,minor,x0,y0,phi] = ellipse
-	ellipse_obj = Ellipse((x0, y0), major*2, minor*2, angle=phi, 
-		            facecolor='none',edgecolor='red')
+	ellipse_obj = Ellipse((x0, y0), major*2, minor*2, (180/np.pi)*phi, 
+		            facecolor='none',edgecolor='green',linestyle='-', 
+		            zorder=100)
 	ax.add_patch(ellipse_obj)
 	
 	files = glob("contourFit*.png")
