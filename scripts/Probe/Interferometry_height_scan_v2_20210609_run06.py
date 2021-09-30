@@ -117,6 +117,8 @@ plt.ylabel('$n_e$ [cm$^{-3}$]')
 
 from scipy.optimize import curve_fit 
 
+
+
 def y(x, ne_0):
     # from Chen et al., Applied Physics Letters, (2013)
     d = 1

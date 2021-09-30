@@ -51,6 +51,8 @@ def find_wire_shadows(x_mm, im, plotting = True,
     Function processes image to give wire shadow positions on screen and their 
     widths (sigma of gaussian fit to shadow).
     
+    returns (shadow_mid_point, shadow_mid_point_err, shadow_width (std), shadow_width_err)
+    
     x_mm shoud be x_axis for image (1d numpy array)
     im should transformed raw image from espec object
     plotting is bool to make figs to show how analysis is working

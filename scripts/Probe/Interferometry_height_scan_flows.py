@@ -63,6 +63,7 @@ ne = np.array(ne)
 ne_err = np.array(ne_err)  
 
 #%%
+
 prop_cycle = plt.rcParams['axes.prop_cycle']
 colors = prop_cycle.by_key()['color']
 
@@ -101,8 +102,8 @@ yerr_us = [[] for i in h_us]
 
 for i in range(len(heights)):
     idx = h_us.index(heights[i])
-    y_us[idx].append(ne[idx])
-    yerr_us[idx].append(ne_err[idx])
+    y_us[idx].append(ne[i])
+    yerr_us[idx].append(ne_err[i])
     
 best_guess_y =  []
 best_guess_err = []
@@ -138,6 +139,8 @@ best_guess_err_norm = (best_guess_err / f) * 6**(0.5)
 [plt.fill_between(x, y1=h+i-io, y2=h+i+io, alpha=0.25) for i,io,h in zip(best_guess_norm, best_guess_err_norm, h_us)]
 
 [plt.axhline(y=h, color='k', ls='-') for h in heights]
+plt.xlabel('Laser axis [mm]')
+plt.ylabel('Height above nozzle [mm]')
 
 
 #%%

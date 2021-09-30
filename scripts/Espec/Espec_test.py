@@ -103,6 +103,7 @@ win.add_multiline_plot('electron_spectra', ['espec1','espec2'], return_electron_
 
 #%%
 # test out a function on a whole run
+"""
 charge = []
 for spec in specs:
     espec_pipeline = DataPipeline(spec.diag, spec.get_total_charge_from_im, single_shot_mode=True)
@@ -112,7 +113,7 @@ for spec in specs:
     charge.append(charge_data)
     
 charge = np.array(charge).T
-
+"""
 #%%
 # plot charge for the run
 plt.figure()

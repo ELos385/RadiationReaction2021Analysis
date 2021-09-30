@@ -16,10 +16,10 @@ from modules.Probe.Interferometry import *
 #date = '20210621'
 #run = 'run04'
 
-date = '20210622'
-run = 'run09'
+date = '20210520'
+run = 'run17'
 
-shot = 143 #shot='Shot002'
+shot = 24 #shot='Shot002'
 file_ext = '.TIFF'
 
 # get the analysis object
