@@ -69,6 +69,7 @@ plt.plot(imgP_pix[:,0],imgP_pix[:,1],'r+')
 fp = ROOT_DATA_FOLDER + '/../photos/' + 'RR2021 Cary Phone Photos/' + 'IMG_20210428_091203.jpg'
 
 img = imread(fp)
+img = rgb2gray(img)
 imgP_pix, imgP_real = [[]], [[]]
 
 # mark on points - comment out if unsure
@@ -165,3 +166,131 @@ plt.title('%s- Transformed' % (date))
 
 #%%
 plt.show()
+
+#%%
+from scipy.signal import find_peaks
+from scipy.interpolate import UnivariateSpline
+from scipy.ndimage import gaussian_filter
+from scipy.optimize import curve_fit
+
+
+def ruler_marks_func(x,A,c,x0, sigma_mm):
+    """ideal ruler markings profile, but unresolved by sigma_mm factor
+    """
+    # upsample x
+    x_new = np.linspace(x.min(), x.max(), 10*x.size)
+    
+    dx = 0.1 # markings are 100 um wide
+    ideal = np.zeros_like(x_new)
+    points = np.arange(int(x_new.min()), int(x_new.max())+1) + x0
+    lb_set = points - dx/2.0
+    ub_set = points + dx/2.0
+    for lb,ub in zip(lb_set,ub_set):
+        ids = (x_new>=lb) & (x_new<=ub)
+        ideal[ids] = 1.0
+    
+    dx_dp = np.mean(np.gradient(x_new))
+    sigma_pix = sigma_mm / dx_dp
+    y_prof = gaussian_filter(ideal, sigma_pix)
+    output = c + A*y_prof
+    
+    output_reg_sample = np.interp(x, x_new, output)
+    return output_reg_sample
+
+
+def find_spatial_resolution_from_lineout(x, y, dx_dp, smooth_troughs=0.001,
+                                         smooth_peaks=0.001, 
+                                         plotter=True):    
+    plt.figure()
+    plt.title('Trough fitting')
+    plt.plot(x, y)
+    troughs, _ = find_peaks(-y, distance=0.75/dx_dp)
+    plt.plot(x[troughs], y[troughs], "x")
+    
+    spl = UnivariateSpline(x[troughs], y[troughs])
+    spl.set_smoothing_factor(smooth_troughs)
+    plt.plot(x, spl(x), 'g')
+    
+    y = y-spl(x)
+    
+    plt.figure()
+    plt.title('Peak fitting')
+    plt.plot(x,y)
+    peaks, _ = find_peaks(y, distance=0.75/dx_dp)
+    plt.plot(x[peaks], y[peaks], "x")
+    spl = UnivariateSpline(x[peaks], y[peaks])
+    spl.set_smoothing_factor(smooth_peaks)
+    plt.plot(x, spl(x), 'g')
+    
+    y /= spl(x)
+    
+    
+    plt.figure()
+    plt.plot(x,y)
+    plt.title('Markings properly normalised')
+     
+
+    plt.figure()
+    plt.plot(x, y)
+    plt.title('Fitted markings')
+    
+        
+    p0 = [3.0, 0.00, 0.0, 0.115]
+    bounds = [[0.4, 10.0], [-0.001, +0.001], [-0.5, +0.5], [0.05, 0.450]]
+    bounds = list(zip(*bounds))
+    
+    popt,pcov = curve_fit(ruler_marks_func, x, y, p0, bounds=bounds)
+    plt.plot(x, ruler_marks_func(x, *popt), 'r--')
+    
+    plt.plot(x, ruler_marks_func(x, 1.0, popt[1], popt[2], 0.0), 'k')
+    
+    perr = np.diagonal(pcov)**(0.5)
+    
+    print('Resolution: ', 1e3*popt[-1], 'um ± ', (1e2*perr/popt)[-1], '%')
+
+    return popt, perr
+
+
+# check resolution method across lower ruler markings
+ymin, ymax = 60.5, 63.5
+xmin, xmax = 1.5, 300.0
+
+y_ids = (y_mm >= ymin) & (y_mm <= ymax)
+x_ids = (x_mm >= xmin) & (x_mm <= xmax)
+
+sub_img = im_out2[:, x_ids]
+sub_img = sub_img[y_ids, :]
+
+x = x_mm[x_ids]
+ruler_marks = np.nanmean(sub_img, axis=0)
+
+plt.figure()
+plt.plot(x, ruler_marks)
+N = 100
+run_mean = np.convolve(ruler_marks, np.ones(N)/N, mode='same')
+plt.plot(x, run_mean, 'r--')
+#plt.figure()
+#plt.plot(x, ruler_marks - run_mean)
+
+# take a smaller manageable section
+xmin = 70
+xmax = 80
+ids = (x>=xmin) & (x<=xmax)
+x = x[ids]
+y = (ruler_marks - run_mean)[ids]
+y -= y.min()
+y /= y.max()
+
+dx_dp = np.mean(np.gradient(x))
+
+
+popt, perr = find_spatial_resolution_from_lineout(x, y, dx_dp, smooth_troughs=0.001,
+                                         smooth_peaks=0.001, 
+                                         plotter=True)
+
+
+# 30 - 40:      118 ± 10 %
+
+# 250 - 260:    210 ± 10 %
+
+
