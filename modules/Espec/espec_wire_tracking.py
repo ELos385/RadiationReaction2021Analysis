@@ -64,7 +64,7 @@ def find_wire_shadows(x_mm, im, plotting = True,
     x = np.copy(x_mm)
     
     # get signal region in image
-    img = get_signal_region(im)
+    img = get_signal_region(im, n_sigma, kernel_size)
     y = np.nansum(img, axis=0)
     y /= y.max()
     
@@ -142,6 +142,119 @@ def find_wire_shadows(x_mm, im, plotting = True,
     
     shadows = np.array(shadows)
     return shadows
+
+def get_shadows_from_clicks(x, y, list_of_rough_peaks, 
+                            wire_width=2.8, smoothing_factor=1e-5, 
+                            plotting=True):
+    """basically same workflow as find_wire_shadows just without hte auto-finding 
+    shadows that always seemed to fail!
+    
+    Instead give a list of rough locations of shadows as a starting point
+    
+    wire_width now in units of x [mm]
+    """
+    peaks = np.copy(list_of_rough_peaks)
+    peak_idxs = []
+    for p in peaks:
+        p_idx = np.argmin((x - p)**2)
+        peak_idxs.append(p_idx)    
+    
+    # get underlying signal without wires    
+    y_no_wires = np.copy(y)
+    for p in peak_idxs:
+        lb,ub = x[p] - wire_width/2.0, x[p] + wire_width/2.0
+        ids = (x >= lb) & (x <=  ub)
+        y_no_wires[ids] = np.nan
+    
+    # fit y_no_wires smoothly across shadows, so shadow widths can be found
+    ids = ~np.isnan(y_no_wires)
+    spl = UnivariateSpline(x[ids], y[ids])
+    spl.set_smoothing_factor(smoothing_factor)
+    
+    if plotting==True:
+        plt.figure()
+        plt.title('Shadow finding analysis')
+        plt.plot(x, y, label='Given signal')
+        plt.plot(x[peak_idxs], y[peak_idxs], "x", label='Shadow peaks')
+        plt.plot(x, y_no_wires, label='Signal only')
+        plt.plot(x, spl(x), label='Spline fit signal only')
+        plt.legend()
+        plt.grid()
+    
+    
+    diff = spl(x) - y
+    
+    if plotting==True:
+        plt.figure()
+        plt.title('Shadow finding analysis')
+        plt.plot(x, diff, label='Signal - Spline fit')
+    
+    shadows = []
+    goodness = []
+    lines = []
+    for idx, p in enumerate(peak_idxs):
+        lb,ub = x[p] - 2*wire_width, x[p] + 2*wire_width
+        ids = (x >= lb) & (x <=  ub)
+        
+        x_d = x[ids]
+        diff_d = diff[ids]
+        
+        p0 = [x[p], wire_width/2.0, 0.1, 0.0]
+        # G(x,mu,o,A,c)
+        # mu, o, A, c
+        #bounds = ((lb, ub), (0, 2.0), (0, 2.0), (-0.1, +0.1))
+        bounds = ((lb, ub), (1e-1, 4.0), (0.0, 1.0), (-0.1, +0.1))
+        bounds = tuple(zip(*bounds))
+        
+        try:
+            popt, pcov = curve_fit(G, x_d, diff_d, p0, bounds=bounds)
+            perr = np.diag(pcov)**(0.5)
+            # print(popt)
+            
+            # check fit around peak
+            x_ids = (x_d >= popt[0]-popt[1]) & (x_d <= popt[0]+popt[1])
+            goodness_check = np.mean( (G(x_d[x_ids], *popt) - diff_d[x_ids])**2 )
+            goodness.append(goodness_check)
+            
+            if plotting == True:
+                if idx==0:
+                    line, = plt.plot(x_d, G(x_d, *popt), 'r', ls='-.', label='Gaussian fit')
+                else:
+                    line, = plt.plot(x_d, G(x_d, *popt), 'r', ls='-.')
+                lines.append(line)    
+                
+        except(RuntimeError):
+            # couldn't fit - just ignore it
+            popt = np.full_like(p0, fill_value=np.nan)
+            perr = np.full_like(p0, fill_value=np.nan)
+        shadows.append([popt[0], perr[0], popt[1], perr[1]])
+        
+    if plotting == True:
+        plt.legend()
+    
+    shadows = np.array(shadows)
+    
+    # final removal if too many shadows tried to be fitted
+    g = goodness
+    print(np.abs(g - np.median(g))/np.std(g))
+    
+    n_sigma = 4.2
+    non_valid = goodness > np.nanmedian(goodness) + n_sigma * np.nanstd(goodness)
+    
+    shadows = shadows[~non_valid,:]
+    if plotting==True:
+        lines = np.array(lines)
+        to_remove = lines[non_valid]
+        for l in to_remove:
+            l.set_color('g')
+    
+    
+    return shadows
+
+
+
+
+
 
 # wire_shadow_idx (0-19), lb [mm], ub [mm]
 _espec1wire_bounds = [[5, 85, 95],

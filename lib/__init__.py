@@ -17,6 +17,7 @@ from .loader import register_data_loader, ImageDataLoader, LundatronLoader, GCam
 from .folder_tools import get_dirs
 from .sql_tools import get_sql_data
 from .data_visualisation import correlationPlot_mod
+from .figure_clicker import list_clicks_on_ax
 
 BASE_PATH = ROOT_DATA_FOLDER
 
