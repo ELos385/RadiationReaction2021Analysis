@@ -11,15 +11,15 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import Ellipse
 from glob import glob
 
-def plot_contour_ellipse(im,contours,ellipse):
+def plot_contour_ellipse(im,contours,ellipse,path=None):
 	"""
 	Plots the contour and the fitted ellipse on top of the image im
 	contours is an array [x,y] of the contour coordinates
 	ellipse is an array [major,minor,x0,y0,phi] of ellipse parameters
 	"""
 
-	files = glob("contourFit*.png")
-	fname = "contourFit%i.png" % len(files)
+	files = glob(path+"contourFit*.png")
+	fname = path+"contourFit%i.png" % len(files)
 	fig, ax = plt.subplots(num=len(files))
 
 	ax.imshow(im,cmap='plasma',vmin=0,vmax=np.max(im))
@@ -40,7 +40,7 @@ def plot_contour_ellipse(im,contours,ellipse):
 
 	return fname
 
-def contour_ellipse(im,level=0.5,debug=False):
+def contour_ellipse(im,level=0.5,debug=False,debugpath=None):
 	"""
 	Finds a contour at the given level and fits it to an ellipse.
 	level is given relative to the maximum
@@ -51,7 +51,7 @@ def contour_ellipse(im,level=0.5,debug=False):
 	[major,minor,x0,y0,phi] = fit_ellipse(x,y)
 	
 	if debug:
-	    fname = plot_contour_ellipse(im,[x,y],[major,minor,x0,y0,phi])
+	    fname = plot_contour_ellipse(im,[x,y],[major,minor,x0,y0,phi],debugpath)
 
 	return [major,minor,x0,y0,phi]
 	

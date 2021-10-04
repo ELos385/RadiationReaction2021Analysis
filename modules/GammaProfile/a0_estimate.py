@@ -56,7 +56,7 @@ class a0_Estimator:
 		Use the 2nd moment in the two axes
 		"""
 		imout = spot_filtering(im, medfiltwidth=self.medfiltwidth, 
-								threshold=self.threshold)
+					threshold=self.threshold)
 		xw,yw = find_width(imout)
 		vardiff = np.abs(xw**2-yw**2)
 		return vardiff*self.rad_per_px**2
@@ -65,13 +65,25 @@ class a0_Estimator:
 		"""
 		Find the difference in spot width in two axes of an ellipse
 		Use a contour fit to the chosen level
+		Also returns the summed spot intensity and the angle of rotation
 		"""
 		imout = spot_filtering(im, medfiltwidth=self.medfiltwidth, 
-								threshold=self.threshold, 
-								smoothwidth=self.smoothwidth)
+			threshold=self.threshold, smoothwidth=self.smoothwidth)
 		[major,minor,x0,y0,phi] = contour_ellipse(imout, level)
-		vardiff = np.abs(major**2-minor**2) / (-2*np.log(level)) 
-		return vardiff*self.rad_per_px**2
+		vardiff = np.abs(major**2-minor**2) / (-2*np.log(level))
+		
+		spot = imout>level*np.max(imout)
+		spotSum = np.sum(imout[spot])
+
+		return vardiff*self.rad_per_px**2,spotSum,phi
+
+	def get_debug_image(self,im,level=0.5):
+		"""
+		Return the filtered spot only for debugging
+		"""
+		imout = spot_filtering(im, medfiltwidth=self.medfiltwidth, 
+			threshold=self.threshold, smoothwidth=self.smoothwidth)
+		return imout
 
 	def a0_estimate_av(self,vardiff,gammai,gammaf):
 		"""
