@@ -44,18 +44,17 @@ shot_num2, gamma_data = a0_pipeline.run('%s/%s'%(date, run),
 #			single_shot_mode=True)
 #shot_num2, debug_ims = a0_pipeline.run('%s/%s'%(date, run), 
 #					parallel='thread')
-#level = np.exp(-0.5)
-#vardiff_data = np.zeros(np.shape(shot_num))
-#spotSum_data = np.zeros(np.shape(shot_num))
-#angle_data = np.zeros(np.shape(shot_num))
+#level = 0.5
+#gamma_data = np.zeros([np.size(shot_num),4])
 #for i,im in enumerate(debug_ims):
-#	[major,minor,x0,y0,phi] = contour_ellipse(im,level=level, debug=True, 
+#	[major,minor,x0,y0,phi,gof] = contour_ellipse(im,level=level, debug=True, 
 #					debugpath='Debug/')
-#	angle_data[i] = phi*180/np.pi
 #	vardiff = np.abs(major**2-minor**2) / (-2*np.log(level)) 
-#	vardiff_data[i] = vardiff*rad_per_px**2
+#	gamma_data[i,0] = vardiff*rad_per_px**2
 #	spot = im>level*np.max(im)
-#	spotSum_data[i] = np.sum(im[spot])
+#	gamma_data[i,1] = np.sum(im[spot])
+#	gamma_data[i,2] = phi*180/np.pi
+#	gamma_data[i,3] = gof
 
 # Raise a warning if shot numbers don't match
 if shot_num2 != shot_num:
@@ -73,27 +72,35 @@ if shot_num2 != shot_num:
 gammaf = espec_data[:,0]/0.511	# 90th percentile energies
 gammai = np.median(gammaf)	# Assume most shots are misses
 vardiff = gamma_data[:,0]
-a0_data = a0_Est.a0_estimate_av(vardiff,gammai,gammaf)
+a0 = a0_Est.a0_estimate_av(vardiff,gammai,gammaf)
 
 fig,axs = plt.subplots(nrows=2,ncols=2)
 
-p0 = axs[0].hist(a0_data[~np.isnan(a0_data)])
-axs[0].set_xlabel('$a_0$')
-axs[0].set_ylabel('Count')
+gof = gamma_data[:,3]
+subset = np.logical_and(gof<1e7,~np.isnan(a0))
+
+gof = gamma_data[:,3]
+ngof,bins,p2 = axs[0,0].hist(np.log10(gof))
+p2b = axs[0,0].hist(np.log10(gof[subset]),bins=bins)
+axs[0,0].set_xlabel('RMS Residual (log10)')
+axs[0,0].set_ylabel('Count')
 
 spotSum = gamma_data[:,1]
-p1 = axs[1].semilogx(spotSum,a0_data,'.')
-axs[1].set_xlabel('spotSum')
-axs[1].set_ylabel('$a_0$')
+p1 = axs[0,1].loglog(gof,spotSum,'.')
+p1b = axs[0,1].loglog(gof[subset],spotSum[subset],'.')
+axs[0,1].set_xlabel('RMS Residual')
+axs[0,1].set_ylabel('spotSum')
 
-angles = gamma_data[:,2]
-p2 = axs[2].hist(angles)
-axs[2].set_xlabel('$\phi (^\circ)$')
-axs[2].set_ylabel('Count')
+p3 = axs[1,0].loglog(gof,a0,'.')
+p3b = axs[1,0].loglog(gof[subset],a0[subset],'.')
+axs[1,0].set_xlabel('RMS Residual')
+axs[1,0].set_ylabel('$a_0$')
 
-p3 = axs[3].plot(gammaf*0.511,a0_data,'.')
-axs[3].set_xlabel('$E_f$ (MeV)')
-axs[3].set_ylabel('$a_0$')
+p0b = axs[1,1].hist(a0[subset])
+axs[1,1].set_xlabel('$a_0$')
+axs[1,1].set_ylabel('Count')
 
+
+plt.tight_layout()
 plt.savefig(filename)
 

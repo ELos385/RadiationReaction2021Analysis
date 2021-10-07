@@ -69,13 +69,13 @@ class a0_Estimator:
 		"""
 		imout = spot_filtering(im, medfiltwidth=self.medfiltwidth, 
 			threshold=self.threshold, smoothwidth=self.smoothwidth)
-		[major,minor,x0,y0,phi] = contour_ellipse(imout, level)
+		[major,minor,x0,y0,phi,gof] = contour_ellipse(imout, level)
 		vardiff = np.abs(major**2-minor**2) / (-2*np.log(level))
 		
 		spot = imout>level*np.max(imout)
 		spotSum = np.sum(imout[spot])
 
-		return vardiff*self.rad_per_px**2,spotSum,phi
+		return vardiff*self.rad_per_px**2,spotSum,phi*180/pi,gof
 
 	def get_debug_image(self,im,level=0.5):
 		"""
