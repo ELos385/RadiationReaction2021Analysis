@@ -10,6 +10,7 @@ from lib.fit_ellipse import fit_ellipse
 import matplotlib.pyplot as plt
 from matplotlib.patches import Ellipse
 from glob import glob
+from warnings import warn
 
 def contour_gof(contours,ellipse):
 	"""
@@ -69,11 +70,16 @@ def contour_ellipse(im,level=0.5,debug=False,debugpath=None):
 	level is given relative to the maximum
 	"""
 	contours = find_contours(im, level*np.max(im), fully_connected='high')
-	flattened = np.concatenate(contours)
-	x,y = flattened[:,1],flattened[:,0]
+	if len(contours)>0:
+		flattened = np.concatenate(contours)
+		x,y = flattened[:,1],flattened[:,0]
 
-	[major,minor,x0,y0,phi] = fit_ellipse(x,y)
-	gof = contour_gof([x,y],[major,minor,x0,y0,phi])
+		[major,minor,x0,y0,phi] = fit_ellipse(x,y)
+		gof = contour_gof([x,y],[major,minor,x0,y0,phi])
+	else:
+		warn("Cannot find any contours at level=%0.2f. Returning NaN."%level,RuntimeWarning)
+		x = y = np.NaN
+		major = minor = x0 = y0 = phi = gof = np.NaN
 	
 	if debug:
 		label = "Ellipse: %.2f x %.2f @ (%.2f, %.2f), %.2f$^\circ$ \n RMS residual: %.2e" % (major, minor, x0, y0, phi*180/np.pi, gof)
