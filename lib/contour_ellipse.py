@@ -14,7 +14,8 @@ from glob import glob
 def contour_gof(contours,ellipse):
 	"""
 	Estimate the goodness of fit from the rms distance of contour points 
-	from the fitted ellipse
+	from the fitted ellipse. Write the ellipse as a matrix equation F = a*D(x,y)
+	then calculate |F|^2
 	"""
 
 	[x,y] = contours
@@ -30,9 +31,10 @@ def contour_gof(contours,ellipse):
 	a[5] = a[0]*x0**2+a[1]*x0*y0+a[2]*y0**2-(major*minor)**2
 
 	residual = np.linalg.multi_dot((a,D,D.T,a))
-	return np.sqrt(residual/(len(x)-6))
+	rms = np.sqrt(residual/(len(x)-6))
+	return rms / (major*minor)**2
 
-def plot_contour_ellipse(im,contours,ellipse,path=None):
+def plot_contour_ellipse(im,contours,ellipse,path=None,label=None):
 	"""
 	Plots the contour and the fitted ellipse on top of the image im
 	contours is an array [x,y] of the contour coordinates
@@ -53,6 +55,8 @@ def plot_contour_ellipse(im,contours,ellipse,path=None):
 		            facecolor='none',edgecolor='green',linestyle='-', 
 		            zorder=100)
 	ax.add_patch(ellipse_obj)
+	if label!=None:
+		plt.title(label)
 	
 	fig.savefig(fname)
 	plt.close(fig)
@@ -72,7 +76,8 @@ def contour_ellipse(im,level=0.5,debug=False,debugpath=None):
 	gof = contour_gof([x,y],[major,minor,x0,y0,phi])
 	
 	if debug:
-		fname = plot_contour_ellipse(im,[x,y],[major,minor,x0,y0,phi],debugpath)
+		label = "Ellipse: %.2f x %.2f @ (%.2f, %.2f), %.2f$^\circ$ \n RMS residual: %.2e" % (major, minor, x0, y0, phi*180/np.pi, gof)
+		fname = plot_contour_ellipse(im,[x,y],[major,minor,x0,y0,phi],debugpath,label=label)
 		print("Saved image: " + fname)
 		print("Goodness of fit: %.2e" % gof)
 		print("Ellipse: %.2f, %.2f, %.2f, %.2f, %.2f" % (major,minor,x0,y0,phi))
