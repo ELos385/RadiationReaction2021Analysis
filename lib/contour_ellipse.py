@@ -33,7 +33,7 @@ def contour_gof(contours,ellipse):
 
 	residual = np.linalg.multi_dot((a,D,D.T,a))
 	rms = np.sqrt(residual/(len(x)-6))
-	return rms / (major*minor)**2
+	return rms
 
 def plot_contour_ellipse(im,contours,ellipse,path=None,label=None):
 	"""

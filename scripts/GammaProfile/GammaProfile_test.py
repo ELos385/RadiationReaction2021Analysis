@@ -79,10 +79,11 @@ a0 = a0_Est.a0_estimate_av(vardiff,gammai,gammaf)
 fig,axs = plt.subplots(nrows=2,ncols=2)
 
 gof = gamma_data[:,3]
-subset = np.logical_and(gof<np.exp(-2),~np.isnan(a0))
+subset = np.logical_and(gof<1e6,~np.isnan(a0))
 
 gof = gamma_data[:,3]
-ngof,bins,p2 = axs[0,0].hist(np.log10(gof))
+hrange = ( np.nanmin(gof), np.nanmax(gof[~np.isinf(gof)]) )
+ngof,bins,p2 = axs[0,0].hist(np.log10(gof),range=np.log10(hrange))
 p2b = axs[0,0].hist(np.log10(gof[subset]),bins=bins)
 axs[0,0].set_xlabel('RMS Residual (log10)')
 axs[0,0].set_ylabel('Count')
