@@ -9,6 +9,7 @@ from skimage.measure import find_contours
 from lib.fit_ellipse import fit_ellipse
 import matplotlib.pyplot as plt
 from matplotlib.patches import Ellipse
+from PIL import Image, ImageDraw
 from glob import glob
 from warnings import warn
 
@@ -89,5 +90,28 @@ def contour_ellipse(im,level=0.5,debug=False,debugpath=None):
 		print("Ellipse: %.2f, %.2f, %.2f, %.2f, %.2f" % (major,minor,x0,y0,phi))
 
 	return [major,minor,x0,y0,phi,gof]
+
+def ellipse_mask(imsize,ellipse, debug=False):
+	(width,height)=imsize
+	img = Image.new('L', (width, height), 0)
+	[major,minor,x0,y0,phi,gof] = ellipse
+
+	overlay = Image.new('L',(width, height),0)
+	bbox = [(x0-major,y0-minor),(x0+major,y0+minor)]
+	ImageDraw.Draw(overlay).ellipse(bbox,outline=1,fill=1)
+	rotated = overlay.rotate(-phi*180/np.pi,expand=False,center=(x0,y0))
+	img.paste(rotated)
+	mask = np.array(img)
+
+	if debug:
+		fig, ax = plt.subplots()
+		plt.imshow(mask)
+		ellipse_obj = Ellipse((x0, y0), major*2, minor*2, (180/np.pi)*phi, 
+		            facecolor='none',edgecolor='green',linestyle='-', 
+		            zorder=100)
+		ax.add_patch(ellipse_obj)
+		plt.show()
+
+	return mask
 	
 	

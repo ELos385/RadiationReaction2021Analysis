@@ -7,6 +7,7 @@
 import numpy as np
 from scipy.constants import pi,c,alpha,m_e
 from scipy.ndimage import median_filter,convolve
+from PIL import Image, ImageDraw
 from glob import glob
 import matplotlib.pyplot as plt
 from lib.moments_2d import find_width
@@ -28,17 +29,20 @@ class a0_Estimator:
 	"""
 
 	# Initialise
-	def __init__(self, rad_per_px, wavelength=0.8e-6, FWHM_t=40.0e-15, medfiltwidth=5, threshold=1, smoothwidth=0, bg_path=None):
+	def __init__(self, rad_per_px, wavelength=0.8e-6, FWHM_t=40.0e-15, medfiltwidth=5, smoothwidth=0, bg_path=None,roi=None):
 		self.lambda0 = wavelength
 		self.tau = FWHM_t
 		self.medfiltwidth = medfiltwidth
-		self.threshold = threshold
 		self.smoothwidth = smoothwidth
 		self.rad_per_px = rad_per_px
 		self.bg_path = bg_path
 		self.bg = None
+		self.mask = None
 		if bg_path is not None:
 			self.bg = self.average_background(bg_path)
+		if roi is not None:
+			print("DEBUG: Making region of interest mask:" + str(roi))
+			self.mask = self.make_roi_mask(roi)
 
 	def average_background(self,bg_path,debug=False):		
 		bg_files = glob(bg_path+'/*.tif')
@@ -62,17 +66,28 @@ class a0_Estimator:
 			
 		return av_bg
 
+	def make_roi_mask(self,roi):
+		(width,height) = roi[0]
+		polygon = roi[1]
+		img = Image.new('L', (width, height), 0)
+		ImageDraw.Draw(img).polygon(polygon, outline=1, fill=1)
+		mask = np.array(img)
+		return mask
 
 	def spot_filtering(self,im):
 		"""
 		Despeckle an image and remove the background
 		"""
 		sz = int(2*np.floor(self.medfiltwidth/2)+1) # Make sure sz is odd
-		despeckled = median_filter(im.astype('double'),size=sz,mode='nearest')
+		imout = median_filter(im.astype('double'),size=sz,mode='nearest')
 
 		if self.bg is not None:
-			despeckled -= self.bg
-		imout = despeckled - self.threshold*np.median(despeckled)
+			imout -= self.bg
+
+		imout -= np.median(imout)
+
+		if self.mask is not None:
+			imout *= self.mask
 
 		if self.smoothwidth>0:
 			kernel1d = np.kaiser(self.smoothwidth,14)
