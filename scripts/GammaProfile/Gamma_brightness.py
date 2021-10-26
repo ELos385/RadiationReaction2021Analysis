@@ -16,8 +16,8 @@ from lib.contour_ellipse import contour_ellipse, ellipse_mask
 
 gamma_profile='GammaProfile'
 
-date= '20210604'
-run= 'run21'
+date= '20210620'
+run= 'run10'
 bg_run = 'run04'
 filename = 'brightness_test_'+date+'_'+run
 
@@ -82,14 +82,14 @@ axs[0,1].set_ylabel('spot mean')
 valid = np.logical_and(~np.isinf(im_max),im_max > 0)
 p2 = axs[1,0].hist(np.log10(im_max[valid]))
 p2b = axs[1,0].hist(np.log10(im_max[hits]))
-p2c = axs[1,0].hist(np.log10(im_max[nulls]))
+p2c = axs[1,0].hist(np.log10(im_max[np.logical_and(nulls,valid)]))
 axs[1,0].set_xlabel('log10(image max)')
 axs[1,0].set_ylabel('Count')
 
 valid = np.logical_and(~np.isinf(spot_mean),spot_mean > 0)
 p3 = axs[1,1].hist(np.log10(spot_mean[valid]))
 p3b = axs[1,1].hist(np.log10(spot_mean[hits]))
-p3b = axs[1,1].hist(np.log10(spot_mean[nulls]))
+p3b = axs[1,1].hist(np.log10(spot_mean[np.logical_and(nulls,valid)]))
 axs[1,1].set_xlabel('log10(spot mean)')
 axs[1,1].set_ylabel('Count')
 

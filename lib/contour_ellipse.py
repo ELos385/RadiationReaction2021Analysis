@@ -86,7 +86,7 @@ def contour_ellipse(im,level=0.5,debug=False,debugpath=None):
 		major = minor = x0 = y0 = phi = gof = np.NaN
 	
 	if debug:
-		label = "Ellipse: %.2f x %.2f @ (%.2f, %.2f), %.2f$^\circ$ \n Peak: %0.2f, RMS residual: %.2e" % (major, minor, x0, y0, phi*180/np.pi, gof, np.max(im))
+		label = "Ellipse: %.2f x %.2f @ (%.2f, %.2f), %.2f$^\circ$ \n Peak: %0.2f, RMS residual: %.2e" % (major, minor, x0, y0, phi*180/np.pi, np.max(im), gof)
 		fname = plot_contour_ellipse(im,[x,y],[major,minor,x0,y0,phi],debugpath,label=label)
 		print("Saved image: " + fname)
 		print("Goodness of fit: %.2e" % gof)
