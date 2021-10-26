@@ -41,7 +41,6 @@ class a0_Estimator:
 		if bg_path is not None:
 			self.bg = self.average_background(bg_path)
 		if roi is not None:
-			print("DEBUG: Making region of interest mask:" + str(roi))
 			self.mask = self.make_roi_mask(roi)
 
 	def average_background(self,bg_path,debug=False):		
@@ -50,9 +49,6 @@ class a0_Estimator:
 		av_bg = 0
 		for i,bg_file in enumerate(bg_files):
 			bg_im = plt.imread(bg_file)
-			M,N = np.shape(bg_im)
-			x,y = np.linspace(0,M,M),np.linspace(0,N,N)
-			x_bounds,y_bounds = [0,M],[0,N]
 			imout = self.spot_filtering(bg_im)
 			av_bg += imout/N_files
 
@@ -129,6 +125,14 @@ class a0_Estimator:
 		"""
 		imout = self.spot_filtering(im)
 		return imout
+
+	def get_spot_brightness(self,im):
+		"""
+		Estimate gamma brightness from the brightest pixel after filtering
+		"""
+		imout = self.spot_filtering(im)
+		im_max = np.max(imout)
+		return im_max
 
 	def a0_estimate_av(self,vardiff,gammai,gammaf):
 		"""

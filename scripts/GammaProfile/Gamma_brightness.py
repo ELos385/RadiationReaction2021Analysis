@@ -1,10 +1,8 @@
 #!/usr/bin/python3
 # Author: Chris Arran
-# Date: September 2021
+# Date: October 2021
 #
-# Aims to estimate the a0 from the gamma profile screen
-# Added the espec to pull out gamma_i and gamma_f
-# Added plotting routine to make figure
+# Looks at the brightness of the gamma beam on the profile screen
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -19,7 +17,7 @@ from lib.contour_ellipse import contour_ellipse, ellipse_mask
 gamma_profile='GammaProfile'
 
 date= '20210604'
-run= 'run23'
+run= 'run21'
 bg_run = 'run04'
 filename = 'brightness_test_'+date+'_'+run
 
@@ -40,8 +38,7 @@ level = 0.5
 gamma_data = np.zeros([np.size(shot_num),4])
 for i,im in enumerate(debug_ims):
 	[major,minor,x0,y0,phi,gof] = contour_ellipse(im,level=level, 
-					debugpath='Debug/')
-	
+					debugpath='Debug/',debug=True)
 	gamma_data[i,0] = np.max(im)
 	mask = ellipse_mask(np.shape(im), [major,minor,x0,y0,phi,gof])
 	gamma_data[i,1] = np.mean(im*mask)
@@ -68,7 +65,8 @@ p1b = axs[0,1].loglog(im_max[subset],spot_mean[subset],'.')
 axs[0,1].set_xlabel('image max')
 axs[0,1].set_ylabel('spot mean')
 
-p2 = axs[1,0].hist(np.log10(im_max))
+valid = np.logical_and(~np.isinf(im_max),im_max > 0)
+p2 = axs[1,0].hist(np.log10(im_max[valid]))
 axs[1,0].set_xlabel('log10(image max)')
 axs[1,0].set_ylabel('Count')
 

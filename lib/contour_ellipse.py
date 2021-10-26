@@ -75,7 +75,10 @@ def contour_ellipse(im,level=0.5,debug=False,debugpath=None):
 		flattened = np.concatenate(contours)
 		x,y = flattened[:,1],flattened[:,0]
 
-		[major,minor,x0,y0,phi] = fit_ellipse(x,y)
+		try:
+			[major,minor,x0,y0,phi] = fit_ellipse(x,y)
+		except:
+			major = minor = x0 = y0 = phi = gof = np.NaN
 		gof = contour_gof([x,y],[major,minor,x0,y0,phi])
 	else:
 		warn("Cannot find any contours at level=%0.2f. Returning NaN."%level,RuntimeWarning)
