@@ -38,7 +38,7 @@ level = 0.5
 gamma_data = np.zeros([np.size(shot_num),4])
 for i,im in enumerate(debug_ims):
 	[major,minor,x0,y0,phi,gof] = contour_ellipse(im,level=level, 
-					debugpath='Debug/',debug=True)
+					debugpath='Debug/',debug=False)
 	gamma_data[i,0] = np.max(im)
 	mask = ellipse_mask(np.shape(im), [major,minor,x0,y0,phi,gof])
 	gamma_data[i,1] = np.mean(im*mask)
@@ -53,25 +53,43 @@ spot_mean = gamma_data[:,1]
 gof = gamma_data[:,3]
 subset = gof<1e6
 
+middle_half = im_max[np.logical_and(im_max<np.percentile(im_max,75), im_max>np.percentile(im_max,25)) ]
+stdev_est = np.std(middle_half) / 0.377693
+print("Mean and st. dev. of population: %0.2f +- %0.2f" % (np.mean(im_max),np.std(im_max)) )
+print("Mean and st. dev. of middle half: %0.2f +- %0.2f" % (np.mean(middle_half),np.std(middle_half)) )
+lower_threshold = np.percentile(im_max,25)
+upper_threshold = np.mean(middle_half)+4*stdev_est
+hits = im_max > upper_threshold
+nulls = im_max < lower_threshold
+print("Upper / lower thresholds: %0.2f / %0.2f" % (upper_threshold,lower_threshold) )
+print("Number of hits / nulls / total: %i / %i / %i" % (np.sum(hits),np.sum(nulls),len(hits)) )
+
 p0a = axs[0,0].loglog(gof,im_max,'.')
-p0b = axs[0,0].loglog(gof[subset],im_max[subset],'.')
+p0b = axs[0,0].loglog(gof[hits],im_max[hits],'.')
+p0b = axs[0,0].loglog(gof[nulls],im_max[nulls],'.')
 p0c = axs[0,0].loglog(gof,spot_mean,'+')
-p0d = axs[0,0].loglog(gof[subset],spot_mean[subset],'+')
+p0d = axs[0,0].loglog(gof[hits],spot_mean[hits],'+')
+p0d = axs[0,0].loglog(gof[nulls],spot_mean[nulls],'+')
 axs[0,0].set_xlabel('RMS Residual')
 axs[0,0].set_ylabel('image max | spot mean')
 
 p1 = axs[0,1].loglog(im_max,spot_mean,'.')
-p1b = axs[0,1].loglog(im_max[subset],spot_mean[subset],'.')
+p1b = axs[0,1].loglog(im_max[hits],spot_mean[hits],'.')
+p1c = axs[0,1].loglog(im_max[nulls],spot_mean[nulls],'.')
 axs[0,1].set_xlabel('image max')
 axs[0,1].set_ylabel('spot mean')
 
 valid = np.logical_and(~np.isinf(im_max),im_max > 0)
 p2 = axs[1,0].hist(np.log10(im_max[valid]))
+p2b = axs[1,0].hist(np.log10(im_max[hits]))
+p2c = axs[1,0].hist(np.log10(im_max[nulls]))
 axs[1,0].set_xlabel('log10(image max)')
 axs[1,0].set_ylabel('Count')
 
 valid = np.logical_and(~np.isinf(spot_mean),spot_mean > 0)
 p3 = axs[1,1].hist(np.log10(spot_mean[valid]))
+p3b = axs[1,1].hist(np.log10(spot_mean[hits]))
+p3b = axs[1,1].hist(np.log10(spot_mean[nulls]))
 axs[1,1].set_xlabel('log10(spot mean)')
 axs[1,1].set_ylabel('Count')
 
