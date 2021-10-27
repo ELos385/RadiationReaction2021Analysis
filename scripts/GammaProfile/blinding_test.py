@@ -2,30 +2,37 @@
 # Author: Chris Arran
 # Date: October 2021
 #
-# Identifies collisions as candidates for radiation reaction
+# Identifies nulls and collisions as candidates for radiation reaction
+# Then scrambles samples of nulls and collisions together into blinded data sets 1, 2, 3
 # Uses purely the gamma profile brightness in order to avoid any circular reasoning
 
 import numpy as np
 import matplotlib.pyplot as plt
 from random import sample
 from warnings import warn
-from config import HOME, ROOT_DATA_FOLDER
+from config import HOME, ROOT_DATA_FOLDER, BLIND_DATA_FOLDER
 from lib.pipeline import DataPipeline
 from lib.sql_tools import get_sql_data
+from lib.make_blind_dataset import blind_read_and_copy
 from modules.GammaProfile.a0_estimate import a0_Estimator
 from calib.GammaProfile.GammaProfile import rad_per_px, roi
 
 gamma_profile='GammaProfile'
 
 date= '20210620'
-runs= ['run09','run10']
-bg_run = 'run04'
-filename = 'blinding_test_'+date+'_'+run
+#runs= ['run06','run07','run08','run09','run10','run11']
+runs = ['run09']
+bg_run = 'run12'
+filename = 'blinding_test_'+date
 
-null_size = 20
-sample_size = 10
+#null_size = 100
+#sample_size = 100
+null_size = 5
+sample_size = 5
 
-gamma_bg_filepath = ROOT_DATA_FOLDER + gamma_profile + '/' + date + '/' + bg_run
+#gamma_bg_filepath = ROOT_DATA_FOLDER + gamma_profile + '/' + date + '/' + bg_run
+gamma_bg_filepath = None
+blind_folder = BLIND_DATA_FOLDER + '/' + date + '/'
 
 # Read in GammaProfile data
 a0_Est = a0_Estimator(rad_per_px,medfiltwidth=10,bg_path=gamma_bg_filepath,roi=roi)
@@ -36,35 +43,59 @@ for run in runs:
 	shot_num, b = a0_pipeline.run('%s/%s'%(date, run), parallel='thread')
 	daterun = ['%s/%s'%(date, run)]
 	gsn,datetime = get_sql_data(daterun,shot_num)
-	np.append(gsns,gsn)
-	np.append(brightness,b)
+	gsns = np.append(gsns,gsn)
+	brightness = np.append(brightness,b)
+	print("Finished " + run)
+	print("Found %i shots, giving %i in total" % (len(shot_num),len(gsns)) )
 
 # Categorise and create subsets
 
-hits = list(np.where(brightness > 1e3)[0])
-nulls = list(np.where(brightness < 1e1)[0])
+upper = np.percentile(brightness,75)
+lower = np.percentile(brightness,25)
+middle_half = brightness[ np.logical_and(brightness>lower, brightness<upper) ]
+stdev_est = np.std(middle_half) / 0.377693
+upper_threshold = np.mean(middle_half) + 4*stdev_est
+
+hits = list(np.where(brightness >= upper_threshold)[0])
+nulls = list(np.where(brightness <= lower)[0])
 all_shots = range(len(brightness))
+
+print("Sorting hits/nulls by brightness thresholds: >=%0.2f / <=%0.2f" % (upper_threshold,lower) )
+print("Number of hits/nulls/total: %i / %i / %i" % (len(hits),len(nulls),len(all_shots)) )
+print("Sampling number of hits/nulls: %i / %i" % (sample_size,null_size) )
 
 A1 = sample(nulls,null_size)
 A2 = sample(hits,sample_size)
 
-B1 = np.array(sample(nulls,null_size)).astype(int)
-B2 = np.array(sample(nulls,sample_size)).astype(int)
+B1 = sample(nulls,null_size)
+B2 = sample(nulls,sample_size)
 
-C1 = np.array(sample(all_shots,null_size)).astype(int)
-C2 = np.array(sample(all_shots,sample_size)).astype(int)
+C1 = sample(all_shots,null_size)
+C2 = sample(all_shots,sample_size)
 
 # Print GSNs to secret files
+in_names = ['SetA','SetB','SetC']
+out_names = ['Set1','Set2','Set3']
+scrambled = sample(out_names,len(out_names))
+header = "Blinded data sets from %s, using runs: %s" % (date,runs)
 
-with open('SetA_' + date + '_' + run + '.txt','w') as f:
-	np.savetxt(f,gsns[A1],header='Nulls:',fmt='%i')
-	np.savetxt(f,gsns[A2],header='Hits: ',fmt='%i')
-with open('SetB_' + date + '_' + run + '.txt','w') as f:
-	np.savetxt(f,gsns[B1],header='Nulls:',fmt='%i')
-	np.savetxt(f,gsns[B2],header='Hits: ',fmt='%i')
-with open('SetC_' + date + '_' + run + '.txt','w') as f:
-	np.savetxt(f,gsns[C1],header='Nulls:',fmt='%i')
-	np.savetxt(f,gsns[C2],header='Hits: ',fmt='%i')
+np.savetxt('blinding_' + date + '.txt', np.transpose([in_names,scrambled]), fmt='%s', header=header)
+
+np.savetxt("%s_nulls_%s.txt" % (scrambled[0],date),gsns[A1],header=header,fmt='%i')
+np.savetxt("%s_hits_%s.txt" % (scrambled[0],date),gsns[A2],header=header,fmt='%i')
+
+np.savetxt("%s_nulls_%s.txt" % (scrambled[1],date),gsns[B1],header=header,fmt='%i')
+np.savetxt("%s_hits_%s.txt" % (scrambled[1],date),gsns[B2],header=header,fmt='%i')
+
+np.savetxt("%s_nulls_%s.txt" % (scrambled[2],date),gsns[C1],header=header,fmt='%i')
+np.savetxt("%s_hits_%s.txt" % (scrambled[2],date),gsns[C2],header=header,fmt='%i')
+
+# Copy files over to blind data
+for out_name in out_names:
+	filename = "%s_nulls_%s" % (out_name,date)
+	blind_read_and_copy(filename+'.txt',blind_folder+filename)
+	filename = "%s_hits_%s" % (out_name,date)
+	blind_read_and_copy(filename+'.txt',blind_folder+filename)
 
 # Plot
 fig,axs = plt.subplots(nrows=2,ncols=2)

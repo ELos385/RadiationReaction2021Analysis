@@ -73,3 +73,53 @@ def get_sql_data(dateruns, shots):
             print('Failed for %s %s' % (r, s))
         
     return gsns, timestamps
+
+def get_sql_shots(gsns):
+    """For a given list of gsns, get the corresponding runs, shot numbers and timestamps 
+    from the data.sqlite file
+    
+    Returns
+    -------
+    tuple (of len == 3)
+        first item: 
+            list
+            list of runs as string, so can be np.nan if not found.
+    
+    second item:
+	    list
+	    list of shots, should be as ints
+
+        third item:
+            list
+            list of timestamps of shots as datetime.datetime objects.
+    
+    The datetime module makes it easier to work out relative time differences
+    
+    Inputs
+    -------
+    gsns
+        list
+        list of unique Gemini shot numbers
+
+    """
+    sql = Read_SQL_shot_summary()
+    sql_data = sql.get_all()
+    sql_dt_format = "%Y-%m-%d %H:%M:%S.%f"
+    
+    dateruns = np.full_like(gsns, fill_value=np.nan, dtype=np.object)
+    shots = np.full_like(gsns, fill_value=np.nan, dtype=int)
+    timestamps = np.full_like(gsns, fill_value=np.nan, dtype=np.object)
+    
+    for idx, g in enumerate(gsns):        
+        try:
+            ids = (sql_data['gsn']==g)
+            timestamp = np.array(sql_data[ids]['timestamp'])[0]
+            timestamps[idx] = dt.strptime(timestamp, sql_dt_format)
+            dateruns[idx] = np.array(sql_data[ids]['run'])[0]
+            shots[idx] = np.array(sql_data[ids]['shot_or_burst'])[0]
+            
+        except(IndexError):
+            # happens if there no entry satisfied clause for ids
+            print('Failed for %s' % (g))
+        
+    return dateruns, shots, timestamps
