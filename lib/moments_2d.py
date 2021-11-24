@@ -28,8 +28,8 @@ def find_center(Arr):
 	x0,y0 = moments_2d(Arr,0)
 	x1,y1 = moments_2d(Arr,1)
 	
-	xc = np.sum(x1)/np.sum(x0)
-	yc = np.sum(y1)/np.sum(y0)
+	xc = np.nansum(x1)/np.nansum(x0)
+	yc = np.nansum(y1)/np.nansum(y0)
 	
 	return np.array([xc,yc])
 	
@@ -43,8 +43,8 @@ def find_width(Arr):
 	
 	xvar = (x2/x0)-(x1/x0)**2
 	yvar = (y2/y0)-(y1/y0)**2
-	xw = np.sqrt(np.nansum(x0*xvar)/np.sum(x0))
-	yw = np.sqrt(np.nansum(y0*yvar)/np.sum(y0))
+	xw = np.sqrt(np.nansum(x0*xvar)/np.nansum(x0))
+	yw = np.sqrt(np.nansum(y0*yvar)/np.nansum(y0))
 	
 	return xw,yw
 	

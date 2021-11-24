@@ -9,6 +9,8 @@ import sys
 sys.path.append('../../')
 from setup import *
 
+from skimage.io import imread
+
 from pathlib import Path
 DATA_PATH = Path(ROOT_DATA_FOLDER)
 
