@@ -20,18 +20,14 @@ from calib.GammaProfile.GammaProfile import rad_per_px, roi
 gamma_profile='GammaProfile'
 
 date= '20210620'
-#runs= ['run06','run07','run08','run09','run10','run11']
-runs = ['run09']
+runs= ['run06','run07','run08','run09','run10','run11']
 bg_run = 'run12'
 filename = 'blinding_test_'+date
 
-#null_size = 100
-#sample_size = 100
-null_size = 5
-sample_size = 5
+null_size = 100
+sample_size = 100
 
-#gamma_bg_filepath = ROOT_DATA_FOLDER + gamma_profile + '/' + date + '/' + bg_run
-gamma_bg_filepath = None
+gamma_bg_filepath = ROOT_DATA_FOLDER + gamma_profile + '/' + date + '/' + bg_run
 blind_folder = BLIND_DATA_FOLDER + '/' + date + '/'
 
 # Read in GammaProfile data
@@ -90,13 +86,6 @@ np.savetxt("%s_hits_%s.txt" % (scrambled[1],date),gsns[B2],header=header,fmt='%i
 np.savetxt("%s_nulls_%s.txt" % (scrambled[2],date),gsns[C1],header=header,fmt='%i')
 np.savetxt("%s_hits_%s.txt" % (scrambled[2],date),gsns[C2],header=header,fmt='%i')
 
-# Copy files over to blind data
-for out_name in out_names:
-	filename = "%s_nulls_%s" % (out_name,date)
-	blind_read_and_copy(filename+'.txt',blind_folder+filename)
-	filename = "%s_hits_%s" % (out_name,date)
-	blind_read_and_copy(filename+'.txt',blind_folder+filename)
-
 # Plot
 fig,axs = plt.subplots(nrows=2,ncols=2)
 
@@ -123,4 +112,11 @@ axs[1,1].set_ylabel('Set C')
 
 plt.tight_layout()
 plt.savefig(filename)
+
+# Copy files over to blind data
+for out_name in out_names:
+	filename = "%s_nulls_%s" % (out_name,date)
+	blind_read_and_copy(filename+'.txt',blind_folder+filename)
+	filename = "%s_hits_%s" % (out_name,date)
+	blind_read_and_copy(filename+'.txt',blind_folder+filename)
 
