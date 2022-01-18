@@ -28,8 +28,7 @@ retrieval_method = 'fft'  # hilbert or fft
 um_per_px = 84.3
 
 # mask for fft retrieval
-ox = 16
-mask_params = [113, 30, ox, 20, 8, 8]   #ux, uy, wx, wy, nx, ny
+mask_params = [113.0, 30.0, 16.0, 20.0, 8, 8]   #ux, uy, wx, wy, nx, ny
 
 ''' Run the code '''
 
@@ -105,4 +104,4 @@ for i in np.arange(len(shot_num)):
         'x axis': x,
         'density lineout': LMI_data[i]
     }
-    save_object(result, '/home/ccct501/Documents/GitHub/RadiationReaction2021Analysis/results/Probe/%s_%s_Shot%02s.pkl'%(diag,run,shot_num[i]))
+    save_object(result, 'C:/Users/ccct501/Documents/RadiationReaction2021Analysis/results/Probe/%s_%s_Shot%02s.pkl'%(diag,run,shot_num[i]))

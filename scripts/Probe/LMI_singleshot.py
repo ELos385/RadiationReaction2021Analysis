@@ -27,8 +27,8 @@ retrieval_method = 'fft'  # hilbert or fft
 um_per_px = 84.3
 
 # mask for fft retrieval
-ox = 16
-mask_params = [113, 30, ox, 20, 8, 8]   #ux, uy, wx, wy, nx, ny
+ox = 16.
+mask_params = [113., 30., ox, 20., 8, 8]   #ux, uy, wx, wy, nx, ny
 
 ''' Run the code '''
 
