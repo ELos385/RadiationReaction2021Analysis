@@ -144,6 +144,22 @@ class a0_Estimator:
 
 		return vardiff*self.rad_per_px**2,spotMean,phi*180/pi,gof
 
+	def get_variances_contour(self,im,level=0.5):
+		"""
+		Find the difference in spot width in two axes of an ellipse
+		Use a contour fit to the chosen level
+		Also returns the summed spot intensity and the angle of rotation
+		"""
+		imout = self.spot_filtering(im)
+		[major,minor,x0,y0,phi,gof] = contour_ellipse(imout, level)
+		var_major = major**2 / (-2*np.log(level))
+		var_minor = minor**2 / (-2*np.log(level))
+		
+		spot = imout>level*np.max(imout)
+		spotMax = np.max(imout[spot])
+
+		return var_major*self.rad_per_px**2,var_minor*self.rad_per_px**2,spotMax,phi*180/pi,gof
+
 	def get_debug_image(self,im,level=0.5):
 		"""
 		Return the filtered spot only for debugging

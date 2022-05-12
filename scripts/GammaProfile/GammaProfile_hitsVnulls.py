@@ -26,14 +26,12 @@ filename = 'GammaProfile_'+date+'_log_'
 
 tForm_filepath = HOME + 'calib/espec1/espec1_transform_20210622_run01_shot001.pkl'
 Espec_cal_filepath = HOME + 'calib/espec1/espec1_disp_cal_20210527_run01_shot001.mat'
-#gamma_bg_filepath = ROOT_DATA_FOLDER + gamma_profile + '/' + date + '/' + bg_run
-gamma_bg_filepath = None
+gamma_bg_filepath = ROOT_DATA_FOLDER + gamma_profile + '/' + date + '/' + bg_run
+#gamma_bg_filepath = None
 
 # Read in GammaProfile data
 a0_Est = a0_Estimator(rad_per_px,medfiltwidth=10,bg_path=gamma_bg_filepath,roi=roi)
-a0_pipeline = DataPipeline(gamma_profile,a0_Est.get_spot_brightness, 
-			single_shot_mode=True)
-a0_pipeline2 = DataPipeline(gamma_profile,a0_Est.get_vardiff_contour, 
+a0_pipeline = DataPipeline(gamma_profile,a0_Est.get_variances_contour, 
 			single_shot_mode=True)
 
 espec_Proc = Espec_proc(tForm_filepath,Espec_cal_filepath)
@@ -42,17 +40,17 @@ espec_pipeline = DataPipeline(espec,
 			single_shot_mode=True)
 
 brightness = np.array([])
-vdiffs = gammas = phis = gofs = np.array([])
+v_majs = v_mins = gammas = phis = gofs = np.array([])
 for run in runs:
-	shot_num, b = a0_pipeline.run('%s/%s'%(date, run), parallel='thread')
-	shot_num2, a0_data = a0_pipeline2.run('%s/%s'%(date, run), parallel='thread')
-	shot_num3, espec_data = espec_pipeline.run('%s/%s'%(date, run),parallel='thread')
+	shot_num, a0_data = a0_pipeline.run('%s/%s'%(date, run), parallel='thread')
+	shot_num2, espec_data = espec_pipeline.run('%s/%s'%(date, run),parallel='thread')
 
-	brightness = np.append(brightness,b)
-	vdiffs = np.append(vdiffs,a0_data[:,0])
+	v_majs = np.append(v_majs,a0_data[:,0])
+	v_mins = np.append(v_mins,a0_data[:,1])
+	brightness = np.append(brightness,a0_data[2])
+	phis = np.append(phis,a0_data[:,3])
+	gofs = np.append(gofs,a0_data[:,4])
 	gammas = np.append(gammas,espec_data[:,0]/0.511)
-	phis = np.append(phis,a0_data[:,2])
-	gofs = np.append(gofs,a0_data[:,3])
 
 	print("Finished " + run)
 	print("Found %i shots, giving %i in total" % (len(shot_num),len(brightness)) )
@@ -70,7 +68,7 @@ nulls = list(np.where(brightness <= lower)[0])
 all_shots = range(len(brightness))
 
 gammai = np.median(gammas[nulls])	# Use median to avoid tails
-a0s = a0_Est.a0_estimate_av(vdiffs,gammai,gammas) / dummy_a0
+a0s = a0_Est.a0_estimate_av(vmajs-v_mins,gammai,gammas) / dummy_a0
 
 #thresholds = np.linspace(0,10,11)
 thresholds = np.logspace(0,2,11)
