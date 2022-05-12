@@ -7,6 +7,7 @@
 import numpy as np
 from scipy.constants import pi,c,alpha,m_e
 from scipy.ndimage import median_filter,convolve
+from skimage.transform import rotate
 from PIL import Image, ImageDraw
 from glob import glob
 import matplotlib.pyplot as plt
@@ -103,6 +104,30 @@ class a0_Estimator:
 		xw,yw = find_width(imout)
 		vardiff = np.abs(xw**2-yw**2)
 		return vardiff*self.rad_per_px**2
+
+	def get_vardiff_rot(self,im,level=0.5,debug=False):
+		"""
+		Find the difference in spot width in two axes of an ellipse
+		Use a contour fit to the chosen level
+		Also returns the summed spot intensity and the angle of rotation
+		"""
+		imout = self.spot_filtering(im)
+		[major,minor,x0,y0,phi,gof] = contour_ellipse(imout, level)
+		imrot = rotate(imout,180.0*phi/np.pi)
+		xw,yw = find_width(imrot)
+		vardiff = np.abs(xw**2-yw**2)
+		
+		spot = imout>level*np.max(imout)
+		spotMean = np.mean(imout[spot])
+
+		if debug:
+			plt.imshow(imrot,cmap='plasma')
+			plt.tight_layout()
+			N = len(glob('Debug/rot_*.png'))
+			plt.savefig('Debug/rot_%i.png' % N)
+			plt.close()
+
+		return vardiff*self.rad_per_px**2,spotMean,phi*180/pi,gof
 
 	def get_vardiff_contour(self,im,level=0.5):
 		"""
