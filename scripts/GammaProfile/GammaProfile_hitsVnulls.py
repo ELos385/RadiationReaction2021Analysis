@@ -13,19 +13,21 @@ from lib.pipeline import DataPipeline
 from modules.Espec.espec_processing import Espec_proc
 from modules.GammaProfile.a0_estimate import a0_Estimator
 from calib.GammaProfile.GammaProfile import rad_per_px, roi
+from calib.GammaProfile.dummy_a0 import dummy_a0
 
 espec = 'espec1'
 gamma_profile='GammaProfile'
 
 date= '20210620'
 runs= ['run05','run06','run07','run08','run09','run10','run11']
-#runs = ['run05']
+#runs = ['run23']
 bg_run = 'run12'
-filename = 'GammaProfile_'+date
+filename = 'GammaProfile_'+date+'_log_'
 
 tForm_filepath = HOME + 'calib/espec1/espec1_transform_20210622_run01_shot001.pkl'
 Espec_cal_filepath = HOME + 'calib/espec1/espec1_disp_cal_20210527_run01_shot001.mat'
-gamma_bg_filepath = ROOT_DATA_FOLDER + gamma_profile + '/' + date + '/' + bg_run
+#gamma_bg_filepath = ROOT_DATA_FOLDER + gamma_profile + '/' + date + '/' + bg_run
+gamma_bg_filepath = None
 
 # Read in GammaProfile data
 a0_Est = a0_Estimator(rad_per_px,medfiltwidth=10,bg_path=gamma_bg_filepath,roi=roi)
@@ -55,6 +57,8 @@ for run in runs:
 	print("Finished " + run)
 	print("Found %i shots, giving %i in total" % (len(shot_num),len(brightness)) )
 
+shift_phis = np.mod(phis+45,180)-45
+
 # Categorise and create subsets
 
 upper = np.percentile(brightness,75)
@@ -66,9 +70,10 @@ nulls = list(np.where(brightness <= lower)[0])
 all_shots = range(len(brightness))
 
 gammai = np.median(gammas[nulls])	# Use median to avoid tails
-a0s = a0_Est.a0_estimate_av(vdiffs,gammai,gammas)
+a0s = a0_Est.a0_estimate_av(vdiffs,gammai,gammas) / dummy_a0
 
-thresholds = np.linspace(0,10,11)
+#thresholds = np.linspace(0,10,11)
+thresholds = np.logspace(0,2,11)
 up_thresholds = np.zeros_like(thresholds)
 N_hits = np.zeros_like(thresholds)  
 mean_a0s = np.zeros_like(thresholds)
@@ -95,28 +100,37 @@ for i,threshold in enumerate(thresholds):
 	p0a = axs[0,0].loglog(brightness[nulls],a0s[nulls],'.',ms=2)
 	p0b = axs[0,0].loglog(brightness[hits],a0s[hits],'.',ms=2)
 	axs[0,0].set_xlabel('pixel brightness')
-	axs[0,0].set_ylabel('$a_0$')
+	axs[0,0].set_ylabel('$a_0$ (blind units)')
 	axs[0,0].set_title('Threshold $>\mu+%0.1f\sigma$' % threshold)
 
 	p1 = axs[0,1].loglog(gofs[valid],a0s[valid],'.',ms=2)
 	p1a = axs[0,1].loglog(gofs[nulls],a0s[nulls],'.',ms=2)
 	p1b = axs[0,1].loglog(gofs[hits],a0s[hits],'.',ms=2)
 	axs[0,1].set_xlabel('RMS Residual')
-	axs[0,1].set_ylabel('$a_0$')
+	axs[0,1].set_ylabel('$a_0$ (blind units)')
 
-	p2 = axs[1,0].hist(a0s[valid],range=(0,50))
-	p2a = axs[1,0].hist(a0s[nulls],range=(0,50))
+	p2 = axs[1,0].hist(a0s[valid])
+	p2a = axs[1,0].hist(a0s[nulls])
 	p2b = axs[1,0].hist(a0s[hits])
-	axs[1,0].set_xlabel('$a_0$')
+	axs[1,0].set_xlabel('$a_0$ (blind units)')
 	axs[1,0].set_ylabel('Count')
-	axs[1,0].set_title( '$a_0 = %0.1f \pm %0.1f$' % (np.mean(a0s[hits]),np.std(a0s[hits])) )
+	axs[1,0].set_title( '$a_0 = %0.1f \pm %0.1f (blind units)$' % (np.mean(a0s[hits]),np.std(a0s[hits])) )
 
-	p3 = axs[1,1].hist(phis[valid])
-	p3a = axs[1,1].hist(phis[nulls])
-	p3b = axs[1,1].hist(phis[hits])
-	axs[1,1].set_xlabel('$\phi (^\circ)$')
-	axs[1,1].set_ylabel('Count')
-	axs[1,1].set_title( '$\phi = %0.1f \pm %0.1f$' % (np.mean(phis[hits]),np.std(phis[hits])) )
+	ax3 = plt.subplot(2,2,4,projection='polar')
+	counts,bins = np.histogram(phis[valid],density=True)
+	angles = 0.5*(bins[:-1]+bins[1:])
+	p3 = ax3.bar(angles*2,counts)
+	counts,bins = np.histogram(phis[nulls],density=True)
+	angles = 0.5*(bins[:-1]+bins[1:])
+	p3a = ax3.bar(angles*2,counts)
+	counts,bins = np.histogram(phis[hits],density=True)
+	angles = 0.5*(bins[:-1]+bins[1:])
+	p3b = ax3.bar(angles*2,counts)
+	new_labels = np.linspace(0,180,1+len(ax3.get_xticklabels()) )
+	ax3.set_xticklabels(new_labels[:-1])
+	ax3.set_xlabel('$\phi (^\circ)$')
+	ax3.set_ylabel('Density')
+	ax3.set_title( '$\phi = %0.1f \pm %0.1f$' % (np.mean(shift_phis[hits]),np.std(shift_phis[hits])) )
 
 	plt.tight_layout()
 	plt.savefig(filename+'_%isigma' % threshold)
@@ -127,15 +141,15 @@ for i,threshold in enumerate(thresholds):
 	print('Nulls a0: ',np.mean(a0s[nulls2]),'+-',np.std(a0s[nulls2]))
 	print('Hits a0: ',np.mean(a0s[hits]),'+-',np.std(a0s[hits]))
 	print('')
-	print('All phi: ',np.mean(phis),'+-',np.std(phis))
-	print('Nulls phi: ',np.mean(phis[nulls]),'+-',np.std(phis[nulls]))
-	print('Hits phi: ',np.mean(phis[hits]),'+-',np.std(phis[hits]))
+	print('All phi: ',np.mean(shift_phis),'+-',np.std(shift_phis))
+	print('Nulls phi: ',np.mean(shift_phis[nulls]),'+-',np.std(shift_phis[nulls]))
+	print('Hits phi: ',np.mean(shift_phis[hits]),'+-',np.std(shift_phis[hits]))
 	print('')
 
 	mean_a0s[i] = np.mean(a0s[hits])
 	std_a0s[i] = np.std(a0s[hits])
-	mean_phis[i] = np.mean(phis[hits])
-	std_phis[i] = np.std(phis[hits])
+	mean_phis[i] = np.mean(shift_phis[hits])
+	std_phis[i] = np.std(shift_phis[hits])
 
 fig,axs = plt.subplots(nrows=2,ncols=2)
 
@@ -148,7 +162,7 @@ axs[0,1].set_ylabel('Fraction of hits')
 axs[0,1].set_xlim(0,10)
 
 p2 = axs[1,0].errorbar(thresholds,mean_a0s,yerr=std_a0s,marker='o',capsize=4)
-axs[1,0].set_ylabel('$a_0$')
+axs[1,0].set_ylabel('$a_0$ (blind units)')
 axs[1,0].set_xlim(0,10)
 
 p3 = axs[1,1].errorbar(thresholds,mean_phis,yerr=std_phis,marker='o',capsize=4)
