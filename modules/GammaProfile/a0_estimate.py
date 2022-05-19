@@ -30,7 +30,7 @@ class a0_Estimator:
 	"""
 
 	# Initialise
-	def __init__(self, rad_per_px, wavelength=0.8e-6, FWHM_t=40.0e-15, medfiltwidth=5, smoothwidth=0, bg_path=None,roi=None):
+	def __init__(self, rad_per_px=55.5e-6, wavelength=0.8e-6, FWHM_t=40.0e-15, medfiltwidth=10, smoothwidth=0, bg_path=None,roi=None):
 		self.lambda0 = wavelength
 		self.tau = FWHM_t
 		self.medfiltwidth = medfiltwidth
