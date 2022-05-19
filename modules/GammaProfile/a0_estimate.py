@@ -155,8 +155,7 @@ class a0_Estimator:
 		var_major = major**2 / (-2*np.log(level))
 		var_minor = minor**2 / (-2*np.log(level))
 		
-		spot = imout>level*np.max(imout)
-		spotMax = np.max(imout[spot])
+		spotMax = np.max(imout)
 
 		return var_major*self.rad_per_px**2,var_minor*self.rad_per_px**2,spotMax,phi*180/pi,gof
 
