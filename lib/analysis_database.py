@@ -35,7 +35,10 @@ class Database:
         self.always_load = always_load
         self.overwrite = overwrite
         
-        
+    def get_columns(self):
+        self.load_dataframe()
+        return list(self.dataframe.columns)        
+    
     def save_entry(self,index_list,data):
         ''' pass entrys one at a time to append to the file '''
         indexes = self.make_index(index_list)
@@ -85,3 +88,5 @@ class Database:
     def save_dataframe(self):
         # self.dataframe.to_hdf(self.hdf_file,key=self.group_key)
         self.dataframe.to_pickle(self.file_path,protocol=4)
+
+        
