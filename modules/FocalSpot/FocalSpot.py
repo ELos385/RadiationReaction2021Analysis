@@ -5,10 +5,10 @@ def two_d_gaussian(T, amplitude, xo, yo, sigma_x, sigma_y, theta, offset):
     x=T[0]
     y=T[1]
     g = amplitude*np.exp(-calc_ellipse(x, y, xo, yo, sigma_x, sigma_y, theta)/2.0)+offset
-    if np.sum(T-g)<=0:
-        return 10**10
-    else:
-        return g.ravel()
+    # if np.sum(T-g)<=0:
+    #     return 10**10
+    # else:
+    return g.ravel()
 
 def calc_ellipse(x, y, xo, yo, sigma_x, sigma_y, theta):
     a = (np.cos(theta)**2)/(sigma_x**2) + (np.sin(theta)**2)/(sigma_y**2)
@@ -112,6 +112,7 @@ class Laser:
 
     def calc_waist(self, z, w0, M, z0):
         waist=(w0**2+M**4*(self.l0/(np.pi*w0))**2*(z-z0)**2)**0.5#w0*np.sqrt(1.0+(((z-focal_pos_z)/Zr)*((z-focal_pos_z)/Zr)))
+        print("waist=%s"%waist)
         return waist
 
     def calc_Raleigh_Range(self, w0):
