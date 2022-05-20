@@ -9,6 +9,7 @@ from skimage.measure import find_contours
 from lib.fit_ellipse import fit_ellipse
 import matplotlib.pyplot as plt
 from matplotlib.patches import Ellipse
+from PIL import Image, ImageDraw
 from glob import glob
 from warnings import warn
 
@@ -74,7 +75,10 @@ def contour_ellipse(im,level=0.5,debug=False,debugpath=None):
 		flattened = np.concatenate(contours)
 		x,y = flattened[:,1],flattened[:,0]
 
-		[major,minor,x0,y0,phi] = fit_ellipse(x,y)
+		try:
+			[major,minor,x0,y0,phi] = fit_ellipse(x,y)
+		except:
+			major = minor = x0 = y0 = phi = gof = np.NaN
 		gof = contour_gof([x,y],[major,minor,x0,y0,phi])
 	else:
 		warn("Cannot find any contours at level=%0.2f. Returning NaN."%level,RuntimeWarning)
@@ -82,12 +86,35 @@ def contour_ellipse(im,level=0.5,debug=False,debugpath=None):
 		major = minor = x0 = y0 = phi = gof = np.NaN
 	
 	if debug:
-		label = "Ellipse: %.2f x %.2f @ (%.2f, %.2f), %.2f$^\circ$ \n RMS residual: %.2e" % (major, minor, x0, y0, phi*180/np.pi, gof)
+		label = "Ellipse: %.2f x %.2f @ (%.2f, %.2f), %.2f$^\circ$ \n Peak: %0.2f, RMS residual: %.2e" % (major, minor, x0, y0, phi*180/np.pi, np.max(im), gof)
 		fname = plot_contour_ellipse(im,[x,y],[major,minor,x0,y0,phi],debugpath,label=label)
 		print("Saved image: " + fname)
 		print("Goodness of fit: %.2e" % gof)
 		print("Ellipse: %.2f, %.2f, %.2f, %.2f, %.2f" % (major,minor,x0,y0,phi))
 
 	return [major,minor,x0,y0,phi,gof]
+
+def ellipse_mask(imsize,ellipse, debug=False):
+	(width,height)=imsize
+	img = Image.new('L', (width, height), 0)
+	[major,minor,x0,y0,phi,gof] = ellipse
+
+	overlay = Image.new('L',(width, height),0)
+	bbox = [(x0-major,y0-minor),(x0+major,y0+minor)]
+	ImageDraw.Draw(overlay).ellipse(bbox,outline=1,fill=1)
+	rotated = overlay.rotate(-phi*180/np.pi,expand=False,center=(x0,y0))
+	img.paste(rotated)
+	mask = np.array(img)
+
+	if debug:
+		fig, ax = plt.subplots()
+		plt.imshow(mask)
+		ellipse_obj = Ellipse((x0, y0), major*2, minor*2, (180/np.pi)*phi, 
+		            facecolor='none',edgecolor='green',linestyle='-', 
+		            zorder=100)
+		ax.add_patch(ellipse_obj)
+		plt.show()
+
+	return mask
 	
 	

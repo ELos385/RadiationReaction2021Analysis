@@ -7,6 +7,8 @@
 import numpy as np
 from scipy.constants import pi,c,alpha,m_e
 from scipy.ndimage import median_filter,convolve
+from skimage.transform import rotate
+from PIL import Image, ImageDraw
 from glob import glob
 import matplotlib.pyplot as plt
 from lib.moments_2d import find_width
@@ -28,17 +30,19 @@ class a0_Estimator:
 	"""
 
 	# Initialise
-	def __init__(self, rad_per_px, wavelength=0.8e-6, FWHM_t=40.0e-15, medfiltwidth=5, threshold=1, smoothwidth=0, bg_path=None):
+	def __init__(self, rad_per_px=55.5e-6, wavelength=0.8e-6, FWHM_t=40.0e-15, medfiltwidth=10, smoothwidth=0, bg_path=None,roi=None):
 		self.lambda0 = wavelength
 		self.tau = FWHM_t
 		self.medfiltwidth = medfiltwidth
-		self.threshold = threshold
 		self.smoothwidth = smoothwidth
 		self.rad_per_px = rad_per_px
 		self.bg_path = bg_path
 		self.bg = None
+		self.mask = None
 		if bg_path is not None:
 			self.bg = self.average_background(bg_path)
+		if roi is not None:
+			self.mask = self.make_roi_mask(roi)
 
 	def average_background(self,bg_path,debug=False):		
 		bg_files = glob(bg_path+'/*.tif')
@@ -46,9 +50,6 @@ class a0_Estimator:
 		av_bg = 0
 		for i,bg_file in enumerate(bg_files):
 			bg_im = plt.imread(bg_file)
-			M,N = np.shape(bg_im)
-			x,y = np.linspace(0,M,M),np.linspace(0,N,N)
-			x_bounds,y_bounds = [0,M],[0,N]
 			imout = self.spot_filtering(bg_im)
 			av_bg += imout/N_files
 
@@ -62,17 +63,28 @@ class a0_Estimator:
 			
 		return av_bg
 
+	def make_roi_mask(self,roi):
+		(width,height) = roi[0]
+		polygon = roi[1]
+		img = Image.new('L', (width, height), 0)
+		ImageDraw.Draw(img).polygon(polygon, outline=1, fill=1)
+		mask = np.array(img)
+		return mask
 
 	def spot_filtering(self,im):
 		"""
 		Despeckle an image and remove the background
 		"""
 		sz = int(2*np.floor(self.medfiltwidth/2)+1) # Make sure sz is odd
-		despeckled = median_filter(im.astype('double'),size=sz,mode='nearest')
+		imout = median_filter(im.astype('double'),size=sz,mode='nearest')
 
 		if self.bg is not None:
-			despeckled -= self.bg
-		imout = despeckled - self.threshold*np.median(despeckled)
+			imout -= self.bg
+
+		imout -= np.median(imout)
+
+		if self.mask is not None:
+			imout *= self.mask
 
 		if self.smoothwidth>0:
 			kernel1d = np.kaiser(self.smoothwidth,14)
@@ -93,6 +105,30 @@ class a0_Estimator:
 		vardiff = np.abs(xw**2-yw**2)
 		return vardiff*self.rad_per_px**2
 
+	def get_vardiff_rot(self,im,level=0.5,debug=False):
+		"""
+		Find the difference in spot width in two axes of an ellipse
+		Use a contour fit to the chosen level
+		Also returns the summed spot intensity and the angle of rotation
+		"""
+		imout = self.spot_filtering(im)
+		[major,minor,x0,y0,phi,gof] = contour_ellipse(imout, level)
+		imrot = rotate(imout,180.0*phi/np.pi)
+		xw,yw = find_width(imrot)
+		vardiff = np.abs(xw**2-yw**2)
+		
+		spot = imout>level*np.max(imout)
+		spotMean = np.mean(imout[spot])
+
+		if debug:
+			plt.imshow(imrot,cmap='plasma')
+			plt.tight_layout()
+			N = len(glob('Debug/rot_*.png'))
+			plt.savefig('Debug/rot_%i.png' % N)
+			plt.close()
+
+		return vardiff*self.rad_per_px**2,spotMean,phi*180/pi,gof
+
 	def get_vardiff_contour(self,im,level=0.5):
 		"""
 		Find the difference in spot width in two axes of an ellipse
@@ -108,12 +144,35 @@ class a0_Estimator:
 
 		return vardiff*self.rad_per_px**2,spotMean,phi*180/pi,gof
 
+	def get_variances_contour(self,im,level=0.5):
+		"""
+		Find the difference in spot width in two axes of an ellipse
+		Use a contour fit to the chosen level
+		Also returns the summed spot intensity and the angle of rotation
+		"""
+		imout = self.spot_filtering(im)
+		[major,minor,x0,y0,phi,gof] = contour_ellipse(imout, level)
+		var_major = major**2 / (-2*np.log(level))
+		var_minor = minor**2 / (-2*np.log(level))
+		
+		spotMax = np.max(imout)
+
+		return var_major*self.rad_per_px**2,var_minor*self.rad_per_px**2,spotMax,phi*180/pi,gof
+
 	def get_debug_image(self,im,level=0.5):
 		"""
 		Return the filtered spot only for debugging
 		"""
 		imout = self.spot_filtering(im)
 		return imout
+
+	def get_spot_brightness(self,im):
+		"""
+		Estimate gamma brightness from the brightest pixel after filtering
+		"""
+		imout = self.spot_filtering(im)
+		im_max = np.max(imout)
+		return im_max
 
 	def a0_estimate_av(self,vardiff,gammai,gammaf):
 		"""

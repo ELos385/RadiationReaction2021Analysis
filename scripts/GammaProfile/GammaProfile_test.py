@@ -13,7 +13,7 @@ from config import HOME, ROOT_DATA_FOLDER
 from lib.pipeline import DataPipeline
 from modules.Espec.espec_processing import Espec_proc
 from modules.GammaProfile.a0_estimate import a0_Estimator
-from calib.GammaProfile import rad_per_px
+from calib.GammaProfile.GammaProfile import rad_per_px, roi
 from lib.contour_ellipse import contour_ellipse
 
 gamma_profile='GammaProfile'
@@ -36,7 +36,7 @@ espec_pipeline = DataPipeline(espec,
 shot_num, espec_data = espec_pipeline.run('%s/%s'%(date, run),parallel='thread')
 
 # Read in GammaProfile data
-a0_Est = a0_Estimator(rad_per_px,medfiltwidth=10,bg_path=gamma_bg_filepath)
+a0_Est = a0_Estimator(rad_per_px,medfiltwidth=10,bg_path=gamma_bg_filepath,roi=roi)
 #a0_pipeline = DataPipeline(gamma_profile,a0_Est.get_vardiff_contour, 
 #			single_shot_mode=True)
 #shot_num2, gamma_data = a0_pipeline.run('%s/%s'%(date, run), 
