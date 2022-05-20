@@ -43,6 +43,7 @@ x = np.linspace(0, x_max, x_max)#*microns_per_pixel
 y = np.linspace(0, y_max, y_max)#*microns_per_pixel
 X, Y = np.meshgrid(x, y)
 
+i=0
 print('%s, %s, %s, %s, %s, %s, %s'%(spot_props[i,0], spot_props[i,1], spot_props[i,2], spot_props[i,3], spot_props[i,4], spot_props[i,5], spot_props[i,6]))
 fitted_gauss=two_d_gaussian([X, Y], spot_props[i,0], spot_props[i,1], spot_props[i,2], spot_props[i,3], spot_props[i,4], spot_props[i,5], spot_props[i,6]).reshape(X.shape)
 g=calc_ellipse(X, Y, spot_props[i,1], spot_props[i,2], spot_props[i,3], spot_props[i,4], spot_props[i,5])
