@@ -7,6 +7,7 @@
 # 2021-06-08: 150fs (this was done the night before whilst dazzler scanning)
 # 2021-06-08: 80-120fs, north & south
 # 2021-06-09: 53 fs ish
+# 2021-06-09: also 50fs ish?
 # NORTH ENERGY Averaged over 10 shots from 286236 to 286245
 # 2021-06-09:
 # Pump: 46.13 J
