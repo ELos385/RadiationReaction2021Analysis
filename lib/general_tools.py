@@ -162,6 +162,22 @@ def is_arg1_geq_arg2(dt_shot_run_tup1,dt_shot_run_tup2):
 
     return answer
 
+def compute_percentile_from_dist(dist, axis, target_percentile):
+    
+    div=10.0
+    N=int(len(dist)/div)
+    percentile, energy=np.zeros(N), np.zeros(N)
+    #dist=dist/np.trapz(dist, axis)
+    for i in range(0, N):
+        percentile[i]=np.trapz(dist[0:len(axis)-1-int(div)*i], axis[0:len(axis)-1-int(div)*i])
+        energy[i]=axis[len(axis)-1-int(div)*i]
+        if percentile[i]<target_percentile-0.05:
+            break
+    percentile_cut=percentile[percentile!=0.0]
+    energy_cut=energy[energy!=0.0]
+    energy_at_percentile=np.interp(target_percentile, percentile_cut, energy_cut)
+    return energy_at_percentile
+
 def calc_COW(img,X=None,Y=None,img_thresh=0.5):
     iSel = img>img_thresh
     if (X is None) or (Y is None):
