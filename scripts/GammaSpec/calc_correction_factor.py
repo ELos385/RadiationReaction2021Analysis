@@ -22,6 +22,8 @@ from lib.general_tools import *
 from lib.pipeline import *
 from modules.GammaSpec.GammaSpecProc import *
 
+print(CALIB_FOLDER)
+
 dict_corr_factor={}
 diag_arr=np.array(['CsIStackTop', 'CsIStackSide'])
 date='20210622'
@@ -49,6 +51,9 @@ for k in range(0, len(diag_arr)):
         coords, N_crystals_X, N_crystals_Y, pos_array_X, pos_array_Y, crystal_size_XY_pxl, rot_deg=load_crystal_properties(diag)
         #load energy deposition info from mat file
         Egamma_MeV_interp, CsIEnergy_ProjZ_interp=load_Edep_info(diag)
+
+        corr_factor_mean=None
+        corr_factor_se=None
 
         CsIStack=GammaStack(coords, N_crystals_X, N_crystals_Y, pos_array_X, pos_array_Y, crystal_size_XY_pxl, rot_deg, Egamma_MeV_interp, CsIEnergy_ProjZ_interp, corr_factor_mean, corr_factor_se, calib_img, kernel=3, debug=False)
         #CsIStack.plot_contours(GammaStack_Img)
@@ -102,8 +107,8 @@ for k in range(0, len(diag_arr)):
     plt.legend()
     plt.show()
 
-    dict_corr_factor[diag]=mean_correction_factor
-    print("dict_corr_factor[diag]  = %s"%dict_corr_factor[diag])
+    dict_corr_factor[diag]={"mean_corr_factor":mean_correction_factor, "std_corr_factor":std_correction_factor}
+    print("dict_corr_factor  = %s"%dict_corr_factor[diag]["mean_corr_factor"])
 
 outfile=CALIB_FOLDER+"/GammaStack/gamma_stack_correction_factor.pkl"
 with open(outfile, 'wb') as handle:

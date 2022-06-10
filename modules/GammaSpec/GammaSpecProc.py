@@ -34,9 +34,9 @@ diag_view_to_response_fn={
 'CsIStackTop':'CsIEnergy_V_ProjZ_interp',
 'CsIStackSide':'CsIEnergy_H_ProjZ_interp'}
 
-diag_view_to_correction_factor={
-'CsIStackTop':['Top_corr_factor_mean', 'Top_corr_factor_se'],
-'CsIStackSide':['Side_corr_factor_mean', 'Side_corr_factor_se']}
+# diag_view_to_correction_factor={
+# 'CsIStackTop':['Top_corr_factor_mean', 'Top_corr_factor_se'],
+# 'CsIStackSide':['Side_corr_factor_mean', 'Side_corr_factor_se']}
 
 def load_crystal_properties(diag):
     """
@@ -77,11 +77,12 @@ def load_correction_factor(diag):
     """
     Loads correction factors for CsI stack from mat file
     """
-    path_2_correction_factor_mat="../../calib/GammaStack/GammaSpec_corr_factor.mat"
-    correction_factor=loadmat(path_2_correction_factor_mat)
-    keys=diag_view_to_correction_factor[diag]
-    corr_factor_mean=np.array(correction_factor[keys[0]]).reshape(-1)
-    corr_factor_se=np.array(correction_factor[keys[1]]).reshape(-1)
+    path_2_correction_factor_mat="../../calib/GammaStack/gamma_stack_correction_factor_EL.pkl"
+    correction_factor=load_object(path_2_correction_factor_mat)
+    keys=list(correction_factor[diag].keys())
+    #print(correction_factor[diag])
+    corr_factor_mean=np.array(correction_factor[diag][keys[0]]).reshape(-1)
+    corr_factor_se=np.array(correction_factor[diag][keys[1]]).reshape(-1)
     return corr_factor_mean, corr_factor_se
 
 def create_masked_element(coord_array, background_mask, filter_mask, add_x, add_y):
