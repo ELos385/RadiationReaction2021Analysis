@@ -70,6 +70,7 @@ for date in F2_date_to_spatial_calibration_dict.keys():
 
     # print focal spot properties
     if Debug_flag==True:
+        print('date = %s'%int(date))
         print('energy_frac_fhwm=%s+/-%s'%(north_beam.focal_spot.energy_frac_FWHM, north_beam.focal_spot.energy_frac_FWHM_err))
         print('FWHM_ax1_fitted microns=%s+/-%s'%(north_beam.focal_spot.FWHM_x, north_beam.focal_spot.FWHM_x_err))
         print('FWHM_ax2_fitted microns=%s+/-%s'%(north_beam.focal_spot.FWHM_y, north_beam.focal_spot.FWHM_y_err))

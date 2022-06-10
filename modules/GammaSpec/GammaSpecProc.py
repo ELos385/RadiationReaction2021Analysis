@@ -23,6 +23,7 @@ from numpy.linalg import pinv
 from lib.GPR_with_integrated_spectrum import *
 from setup import *
 from lib.general_tools import *
+from modules.GammaSpec.Gamma_stack_ref import *
 
 
 dict_diag_to_crystal_pos={
@@ -88,7 +89,20 @@ def create_masked_element(coord_array, background_mask, filter_mask, add_x, add_
     Given 4 co-ordinates and 2 values, a1 and a2, this sets the value of all pixels inside the coordinates
     to a1, and all pixels outside to a2.
     """
+    # add_x=0
+    # add_y=100
+    b=1000
+    #coord_array_extended=coord_array+np.array([-add_x, -add_y, +add_x, -add_y, add_x, add_y, -add_x, +add_y]).reshape(4, 2)
     coord_array_extended=coord_array+np.array([-add_x, -add_y, +add_x, -add_y, add_x, add_y, -add_x, +add_y]).reshape(4, 2)
+    # plt.scatter(coord_array_extended[:, 0], coord_array_extended[:, 1], color='black')
+    # plt.scatter(coord_array[0, 0], coord_array[0, 1], color='b')
+    # plt.scatter(coord_array[1, 0], coord_array[1, 1], color='r')
+    # plt.scatter(coord_array[2, 0], coord_array[2, 1], color='g')
+    # plt.scatter(coord_array[3, 0], coord_array[3, 1], color='orange')
+
+    #cv2.polylines(img, np.int32([coord_array]), color=(b, b, b), thickness=1, isClosed=True)
+    #cv2.polylines(img, np.int32([coord_array_extended]), color=(b, b, b), thickness=1, isClosed=True)
+
     left, right= np.min(coord_array_extended, axis=0), np.max(coord_array_extended, axis=0)
     x = np.arange(max(0, min(math.ceil(left[0]), 1073)), max(0, min(math.floor(right[0]), 1073)))#np.arange(math.ceil(left[0]), math.floor(right[0])+1)
     y = np.arange(max(0, min(math.ceil(left[1]), 1073)), max(0, min(math.floor(right[1]), 1073)))#[::-1]#np.arange(math.ceil(left[1]), math.floor(right[1])+1)
@@ -153,13 +167,20 @@ def opt_acquisition(X, y, model):
     #return samples most likely to improve surrogate model
 	return Xsamples[ix, 0]
 
+def apply_haircut_filter(img_rot, kernel):
+    img_med =  median_filter(img_rot, size=kernel)
+    threshold=5.0*np.std(img_rot)#1.5*IQR+upper_quantile
+    diff=abs(img_rot-img_med)
+    img_rot[diff>threshold]=img_med[diff>threshold]
+    return img_rot
+
 class GammaStack():
     """
     GammaStack class contains functions for raw image processing, and spectral fitting.
     Properties are the dimensions and positions of the crystals and the energy deposition
     per crystal.
     """
-    def __init__(self, coordinates, N_crystals_X, N_crystals_Y, pos_array_X, pos_array_Y, crystal_size_XY_pxl, rot_deg, Egamma_MeV_interp, CsIEnergy_ProjZ_interp, corr_factor_mean, corr_factor_se, kernel=None, debug=False):
+    def __init__(self, coordinates, N_crystals_X, N_crystals_Y, pos_array_X, pos_array_Y, crystal_size_XY_pxl, rot_deg, Egamma_MeV_interp, CsIEnergy_ProjZ_interp, corr_factor_mean, corr_factor_se, calib_img=None, kernel=None, debug=False):
         self.coords=coordinates
         self.N_crystals_X=N_crystals_X
         self.N_crystals_Y=N_crystals_Y
@@ -174,7 +195,7 @@ class GammaStack():
         self.CsIEnergy_ProjZ_interp=CsIEnergy_ProjZ_interp[:, :self.N_crystals_X]
         self.corr_factor_mean=corr_factor_mean
         self.corr_factor_se=corr_factor_se
-        self.calib_image=None
+        self.calib_image=calib_img
         self.kernel=kernel
         self.debug=debug
 
@@ -183,15 +204,16 @@ class GammaStack():
         Performs image rotation (if neccessary), dark count subtraction and
         applies haircut median filter if specified (i.e. if self.kernel!=None)
         """
-        img_rot=rotate(img, self.rot_deg)
         if self.calib_image is not None:
-            return img_rot-self.calib_image
+            img = cv2.subtract(img, self.calib_image)
 
+        img_rot=rotate(img, self.rot_deg)
         if self.kernel is not None:
-            img_med =  median_filter(img_rot, size=self.kernel)
-            threshold=5.0*np.std(img_rot)#1.5*IQR+upper_quantile
-            diff=abs(img_rot-img_med)
-            img_rot[diff>threshold]=img_med[diff>threshold]
+            img_rot=apply_haircut_filter(img_rot, self.kernel)
+            # img_med =  median_filter(img_rot, size=self.kernel)
+            # threshold=5.0*np.std(img_rot)#1.5*IQR+upper_quantile
+            # diff=abs(img_rot-img_med)
+            # img_rot[diff>threshold]=img_med[diff>threshold]
         return img_rot
 
     def plot_contours(self, img):
@@ -199,11 +221,12 @@ class GammaStack():
         Plots image with the crystal positions overplotted.
         """
         img_cp=self.subtract_bkg(img.copy())
-        brightness=1000
         maxx=(max(img_cp.flatten()))
+        brightness=50#maxx
         for i in range(0, len(self.coords)):
             cv2.polylines(img_cp, np.int32([self.coords[i]]), color=(brightness, brightness, brightness), thickness=2, isClosed=True)
             #cv2.putText(img_cp, "{}".format(np.arange(1, self.N_crystals_X*self.N_crystals_X)[i]), (int(self.coords[i][0][0])+0, int(self.coords[i][0][1])+30), cv2.FONT_HERSHEY_SIMPLEX, 1.2, (brightness,brightness,brightness), 2)
+
         plt.imshow(img_cp)#, vmin=None, vmax=maxx)
         plt.colorbar()
         plt.show()
@@ -215,22 +238,48 @@ class GammaStack():
         of the image.
         """
         background_no_crystals=img[mask_dim_Y, mask_dim_X]+mask
+
+        #w_filters_mean, w_filters_std=self.filter_pack.get_hard_hits(background_no_crystals.copy()[mask_dim_Y, mask_dim_X]+0.0, filter_labels)
+        #background_no_crystals=apply_haircut_filter(background_no_crystals, 5)
+        if self.debug==True:
+            plt.imshow(background_no_crystals)
+            plt.title("background_no_crystals")
+            plt.colorbar()
+            plt.show()
+
         background_no_crystals_del_nan, X_no_crystals_del_nan, Y_no_crystals_del_nan=background_no_crystals[~np.isnan(background_no_crystals)], mask_dim_X[~np.isnan(background_no_crystals)], mask_dim_Y[~np.isnan(background_no_crystals)]
+
+        # if self.debug==True:
+        #     print("X_no_crystals_del_nan.shape=%s"%X_no_crystals_del_nan.shape)
+        #     plt.pcolor(X_no_crystals_del_nan, Y_no_crystals_del_nan, background_no_crystals_del_nan)
+        #     plt.title("masked crystals: background only")
+        #     plt.colorbar()
+        #     plt.show()
 
         Intensity_fit, X_fit, Y_fit=calc_2D_4th_order_polyfit(X_no_crystals_del_nan, Y_no_crystals_del_nan, background_no_crystals_del_nan, [0, len(img[0])], [0, len(img)])
 
         if self.debug==True:
             plt.imshow(Intensity_fit)
+            plt.title("Intensity fit to background")
             plt.colorbar()
             plt.show()
 
         # Need to perform median (haircut) filter to deal with hard hits
+
         #w_filters_mean, w_filters_std=self.filter_pack.get_hard_hits(img.copy()[mask_dim_Y, mask_dim_X]+0.0, filter_labels)
 
         #img_norm=(img.copy()-np.mean(w_filters_mean))/(Intensity_fit-np.mean(w_filters_mean))
-        img_norm=(img.copy())/(Intensity_fit)
+        #img_norm=(img.copy())/(Intensity_fit)
+
+        img_norm=cv2.divide(img.copy(), Intensity_fit,dtype=cv2.CV_64F)
         if self.debug==True:
             plt.imshow(img_norm, vmin=0.99, vmax=1.01)
+            plt.title("Intensity fit to background restricted limits")
+            plt.colorbar()
+            plt.show()
+
+            plt.imshow(img_norm)
+            plt.title("Intensity fit to background no limits")
             plt.colorbar()
             plt.show()
         return img_norm
@@ -241,21 +290,33 @@ class GammaStack():
         """
         mask_new= np.full(img.shape, background_mask)
         XV, YV=[], []
+        #fig, ax = plt.subplots(nrows=1, ncols=1)
+        #im=ax.imshow(img)#, vmin=-1, vmax=1)
         for i in range(0, len(self.coords)):
             xv, yv, mask=create_masked_element(self.coords[i], background_mask, filter_mask, add_x, add_y)
-            mask_new[yv, xv] = mask[:]
+            mask_new[yv, xv] += mask[:]
             XV.append(xv)
             YV.append(yv)
+        #     ax.pcolor(xv, yv, mask),# vmin=-1, vmax=1)
+        # plt.title("mask creation")
+        # plt.colorbar(im)
+        # plt.show()
         return mask_new, XV, YV
 
-    def get_measured_signal_summed_over_columns(self, img, get_total_counts=False, get_beam_pointing=False):
+    def get_measured_signal_rows_and_cols(self, img, get_total_counts=False, get_beam_pointing=False):
         """
         Returns the post-normalisation (i.e. background intensity variations normed out) total counts for each
-        column of crystals.
+        crystal.
         """
-        img=self.subtract_bkg(img)
 
-        filter_mask, _, _=self.create_mask(img, 0.0, np.nan, 4, 0)#15)
+        img=self.subtract_bkg(img)
+        #was 5, 0
+        filter_mask, _, _=self.create_mask(img, 0.0, np.nan, 5, 2)#15)
+
+        if self.debug==True:
+            im=plt.imshow(filter_mask+img)
+            plt.colorbar(im)
+            plt.show()
 
         X, Y, mask_outside_filterpack=create_masked_element(self.gamma_stack_full_area_coords, np.nan, 0.0, 5, 20)
 
@@ -264,9 +325,16 @@ class GammaStack():
             plt.colorbar()
             plt.show()
 
+
         # normalise out beam intensity profile and subtract mean counts due to hard hits
         beam_data=self.normalise_beam_profile(img, mask_outside_filterpack+filter_mask[Y, X], X, Y, get_total_counts, get_beam_pointing)#, get_total_counts, get_beam_pointing)
         img_norm=beam_data.reshape(img.shape)
+
+        if self.debug==True:
+            plt.imshow(img_norm)
+            plt.title("intensity normed img")
+            plt.colorbar()
+            plt.show()
 
         # get mask
         background_mask, XV, YV=self.create_mask(img_norm, np.nan, 0.0, 0, 0)
@@ -274,29 +342,47 @@ class GammaStack():
         YV_r=np.array(YV).reshape(self.N_crystals_Y, self.N_crystals_X, self.crystal_size_XY_pxl, self.crystal_size_XY_pxl)
         XV_r=np.array(XV).reshape(self.N_crystals_Y, self.N_crystals_X, self.crystal_size_XY_pxl, self.crystal_size_XY_pxl)
         img_norm_r=img_norm[YV_r, XV_r]
-        data_normed_noise_crystal_only_summed=np.sum(np.sum(np.sum(img_norm_r, axis=0), axis=1), axis=1)
+
+        data_normed_noise_crystal_only=np.sum(np.sum(img_norm_r, axis=2), axis=2)#np.sum(np.sum(np.sum(img_norm_r, axis=0), axis=1), axis=1)
+        print("img_norm_r.shape=%s"%[img_norm_r.shape])
+        print("data_normed_noise_crystal_only.shape=%s"%[data_normed_noise_crystal_only.shape])
+        print("np.sum(img_norm_r, axis=2).shape=%s"%[np.sum(img_norm_r, axis=2).shape])
 
         if self.debug==True:
-            data_normed_noise_crystal_only=np.transpose(img_norm_r, (0, 2, 1, 3)).reshape(self.N_crystals_Y*self.crystal_size_XY_pxl, self.N_crystals_X*self.crystal_size_XY_pxl)
-            plt.imshow(data_normed_noise_crystal_only)
-            plt.colorbar()
-            plt.show()
+            data_normed_noise_crystal_only_T=np.transpose(img_norm_r, (0, 2, 1, 3)).reshape(self.N_crystals_Y*self.crystal_size_XY_pxl, self.N_crystals_X*self.crystal_size_XY_pxl)
+        #     plt.imshow(data_normed_noise_crystal_only)
+        #     plt.colorbar()
+        #     plt.show()
 
-            data_normed_noise_crystal_only_mean=np.zeros(data_normed_noise_crystal_only.shape)
+            data_normed_noise_crystal_only_mean=np.zeros(data_normed_noise_crystal_only_T.shape)
             signal_summed_over_columns=np.zeros(self.N_crystals_X)
             for j in range(self.N_crystals_X):
                 total_counts_per_column=0
                 for i in range(self.N_crystals_Y):
-                    total_counts_per_crystal=np.sum(data_normed_noise_crystal_only[(self.crystal_size_XY_pxl)*i:(self.crystal_size_XY_pxl)*(i+1), self.crystal_size_XY_pxl*j:self.crystal_size_XY_pxl*(j+1)])
+                    total_counts_per_crystal=np.sum(data_normed_noise_crystal_only_T[(self.crystal_size_XY_pxl)*i:(self.crystal_size_XY_pxl)*(i+1), self.crystal_size_XY_pxl*j:self.crystal_size_XY_pxl*(j+1)])
                     data_normed_noise_crystal_only_mean[(self.crystal_size_XY_pxl)*i:(self.crystal_size_XY_pxl)*(i+1), self.crystal_size_XY_pxl*j:self.crystal_size_XY_pxl*(j+1)]=total_counts_per_crystal
                     total_counts_per_column+=total_counts_per_crystal
                 signal_summed_over_columns[j]=total_counts_per_column
-            plt.imshow(data_normed_noise_crystal_only_mean)
-            plt.colorbar()
-            plt.show()
-        data_normed_noise_crystal_only_summed=data_normed_noise_crystal_only_summed#*self.corr_factor_mean
-        data_normed_noise_crystal_only_summed_div=data_normed_noise_crystal_only_summed/np.mean(data_normed_noise_crystal_only_summed)
-        return data_normed_noise_crystal_only_summed_div#-data_normed_noise_crystal_only_summed_div[0]
+            # plt.imshow(data_normed_noise_crystal_only_mean)
+            # plt.colorbar()
+            # plt.show()
+    #data_normed_noise_crystal_only_summed=data_normed_noise_crystal_only_summed#*self.corr_factor_mean
+    #data_normed_noise_crystal_only_summed_div=data_normed_noise_crystal_only_summed/np.max(data_normed_noise_crystal_only_summed, axis=1)
+        print("data_normed_noise_crystal_only.shape=%s"%[data_normed_noise_crystal_only.shape])
+        return data_normed_noise_crystal_only#data_normed_noise_crystal_only_summed_div#-data_normed_noise_crystal_only_summed_div[0]
+
+
+    def get_measured_signal_summed_over_columns(self, img, get_total_counts=False, get_beam_pointing=False):
+        """
+        Returns the post-normalisation (i.e. background intensity variations normed out) total counts for each
+        column of crystals.
+        """
+
+        data_normed_noise_crystal_only_summed=np.sum(self.get_measured_signal_rows_and_cols(img, get_total_counts, get_beam_pointing), axis=1)
+
+        #data_normed_noise_crystal_only_summed=data_normed_noise_crystal_only_summed#*self.corr_factor_mean
+        #data_normed_noise_crystal_only_summed_div=data_normed_noise_crystal_only_summed/np.mean(data_normed_noise_crystal_only_summed)
+        return data_normed_noise_crystal_only_summed#-data_normed_noise_crystal_only_summed_div[0]
 
     def calc_Compton_energy_spec(self, Ec, height, offset):
         """
