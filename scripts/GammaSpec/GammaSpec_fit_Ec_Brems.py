@@ -14,16 +14,21 @@ from scipy.constants import e, c, epsilon_0, m_e, Boltzmann, hbar, Planck
 import math
 import matplotlib
 import matplotlib.pyplot as plt
+import cv2
 import emcee
 import corner
 from scipy.ndimage import median_filter, rotate
 from scipy.io import loadmat
 from skimage.io import imread
 
+from setup import *
 from lib.general_tools import *
 from lib.pipeline import *
 from modules.GammaSpec.GammaSpecProc import *
 
+file_out='/Users/ee.los/Documents/GitHub/RadiationReaction2021Analysis/calib/GammaStack/gamma_stack_nomalisation_factor.pkl'
+dict_norm_factor={"gamma_stack_norm_factor":np.random.uniform(1.0, 100.0, 1)}
+save_object(dict_norm_factor, file_out)
 
 diag='CsIStackSide'#'CsIStackTop'#'CsIStackSide'
 # date='20210608'
@@ -33,116 +38,77 @@ diag='CsIStackSide'#'CsIStackTop'#'CsIStackSide'
 
 date='20210622'
 run='run19'
-shot_no_arr=np.array(['004'])#np.array(['02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12', '13', '14', '15', '17', '18', '19', '20'])
-#
-# #load crystal properties from mat file
-# coords, N_crystals_X, N_crystals_Y, pos_array_X, pos_array_Y, crystal_size_XY_pxl, rot_deg=load_crystal_properties(diag)
-# #load energy deposition info from mat file
-# Egamma_MeV_interp, CsIEnergy_ProjZ_interp=load_Edep_info(diag)
-# #load correction factor for CsI stack
-# corr_factor_mean, corr_factor_se=load_correction_factor(diag)
-# # load image for background subtraction
-# path_calib=ROOT_DATA_FOLDER+diag+'/'+date+'/'+bkg_img_dict[date][0]+'/'+"Shot00%s.tif"%(bkg_img_dict[date][1])
-# calib_img=imread(path_calib)
-#
-# CsIStack=GammaStack(coords, N_crystals_X, N_crystals_Y, pos_array_X, pos_array_Y, crystal_size_XY_pxl, rot_deg, Egamma_MeV_interp, CsIEnergy_ProjZ_interp, corr_factor_mean, corr_factor_se, hard_hits_filter=None, calib_img=calib_img, kernel=5, debug=False)
-CsIStackSide=initialise_gamma_stack_obj('CsIStackSide', date)
-CsIStackTop=initialise_gamma_stack_obj('CsIStackTop', date)
+shot_no_arr=np.array(['04'])#, '03', '04', '05', '06', '07', '08', '09', '10', '11', '12', '13', '14', '15', '17', '18', '19', '20'])
 
-if (date=='20210622' and run=='run19'):
-    CsIStackTop.norm_factor=1.0
-    CsIStackSide.norm_factor=1.0
+#load crystal properties from mat file
+coords, N_crystals_X, N_crystals_Y, pos_array_X, pos_array_Y, crystal_size_XY_pxl, rot_deg=load_crystal_properties(diag)
+#load energy deposition info from mat file
+Egamma_MeV_interp, CsIEnergy_ProjZ_interp=load_Edep_info(diag)
+#load correction factor for CsI stack
+corr_factor_mean, corr_factor_se=load_correction_factor(diag)
+# load image for background subtraction
+path_calib=ROOT_DATA_FOLDER+diag+'/'+date+'/'+bkg_img_dict[date][0]+'/'+"Shot00%s.tif"%(bkg_img_dict[date][1])
+calib_img=imread(path_calib)
 
-# parameters for Bayes fitting routine
-
-Bayes_guess=np.array([230.0, 0.05, 0.05])
-no_dim=4
-no_walkers=(no_dim+1)*2
-no_steps=10000
-no_burn=8000
-err_guess=1000.0
-percent_std=np.array([0.1])
-
-guess=CsIStackTop.generate_estimates(Bayes_guess, err_guess, percent_std, no_walkers, no_dim)
+CsIStack=GammaStack(coords, N_crystals_X, N_crystals_Y, pos_array_X, pos_array_Y, crystal_size_XY_pxl, rot_deg, Egamma_MeV_interp, CsIEnergy_ProjZ_interp, corr_factor_mean, corr_factor_se, hard_hits_filter=None, calib_img=calib_img, kernel=3, debug=True)
 
 Ec_arr=[]
 predicted_signal_summed_over_columns_arr=[]
 measured_signal_summed_over_columns_arr=[]
-color_side=['b', 'r']
-color_top=['cyan', 'orange']
 
 for i in range(0, len(shot_no_arr)):
-    shot='Shot%s'%shot_no_arr[i]
+    shot='Shot0%s'%shot_no_arr[i]
 
-    pathTop=ROOT_DATA_FOLDER+'CsIStackTop/'+date+'/'+run+'/'+shot+'.tif'
-    pathSide=ROOT_DATA_FOLDER+'CsIStackSide/'+date+'/'+run+'/'+shot+'.tif'
-    GammaStackTop_Img=imread(pathTop)
-    GammaStackSide_Img=imread(pathSide)
+    pathT=ROOT_DATA_FOLDER+diag+'/'+date+'/'+run+'/'+shot+'.tif'
+    GammaStack_Img=imread(pathT)
 
     #CsIStack.plot_contours(GammaStack_Img)
-    # measured_signal_summed_over_columns_Side=CsIStackSide.get_measured_signal_summed_over_columns(GammaStackSide_Img)#, get_total_counts=False, get_beam_pointing=False)
-    measured_signal_summed_over_columns_Top=CsIStackTop.get_measured_signal_summed_over_columns(GammaStackTop_Img.copy())
-    measured_signal_summed_over_columns_Side=CsIStackSide.get_measured_signal_summed_over_columns(GammaStackSide_Img.copy())
-    #measured_signal_summed_over_columns_arr.append(measured_signal_summed_over_columns)
-    #plt.plot(np.arange(len(measured_signal_summed_over_columns_Side)), measured_signal_summed_over_columns_Side, color='r')
-    # plt.plot(np.arange(len(measured_signal_summed_over_columns_Top)), measured_signal_summed_over_columns_Top, color='b')
-    # plt.show()
+    measured_signal_summed_over_columns=CsIStack.get_measured_signal_summed_over_columns(GammaStack_Img)#, get_total_counts=False, get_beam_pointing=False)
+    measured_signal_summed_over_columns=measured_signal_summed_over_columns[0:CsIStack.N_crystals_X_cuttoff]#/np.mean(measured_signal_summed_over_columns[0:CsIStack.N_crystals_X_cuttoff])
     #least squares fitting routine
-    # guess=[23.0, 1.0]#, 1.0]#,10000.0, 0.5]
-    # popt, pcov=CsIStack.least_sqrs(CsIStack.calc_theoretical_Compton_signal_summed_over_columns, guess, measured_signal_summed_over_columns)
-    # popt_normed=popt/CsIStack.norm_factor
-    # print('Ec=%s, sigma Ec=%s'%(popt_normed, pcov/CsIStack.norm_factor))
-    #Gamma_energy_spec=CsIStack.calc_Compton_energy_spec(popt[0], popt[1])#, popt[2])
-    #predicted_signal_summed_over_columns=CsIStack.calc_theoretical_Compton_signal_summed_over_columns(None, popt[0], popt[1])#, popt[2])
+    guess=[190.0, 1.0]#, 1.0]
 
+    #print(CsIStack.calc_theoretical_Compton_signal_summed_over_columns.shape)
+    print(measured_signal_summed_over_columns)
+    popt, pcov=CsIStack.least_sqrs(CsIStack.calc_theoretical_Compton_signal_summed_over_columns, guess, measured_signal_summed_over_columns)
+    popt_normed=popt#/np.random.uniform(1.0, 100.0, 1)
+    print('Ec=%s, sigma Ec=%s'%(popt_normed, pcov/np.random.uniform(1.0, 100.0, 1)))
 
-    #Bayesian fitting routine
-    popt=Bayes_mcmc(guess, no_walkers, no_steps, no_burn, no_dim, measured_signal_summed_over_columns_Top, measured_signal_summed_over_columns_Side, CsIStackTop, CsIStackSide, pool=None)
-    print(popt.shape)
-    # show corner plot
-    # fig = corner.corner(popt)#flat_samples, labels=labels, truths=[m_true, b_true, np.log(f_true)])
+    #Gamma_energy_spec=CsIStack.calc_Compton_energy_spec(popt[0], popt[1], popt[2])
+
+    # plt.plot(CsIStack.Egamma_MeV_interp, Gamma_energy_spec, label='E$_{crit}=%s$'%(popt[0]))
+    # plt.xlabel('Energy (MeV)')
+    # plt.ylabel('$dN/d\gamma$')
+    # plt.legend()
     # plt.show()
 
-    CsIStackSide.plot_bayes_inferred_spec(popt)
-    #CsIStackTop.plot_bayes_inferred_spec(popt)
-    # plt.plot(CsIStack.Egamma_MeV_interp,dN_dE_test)
-    plt.show()
-
-    CsIStackSide.plot_transmission_inferred(popt, measured_signal_summed_over_columns_Side, color_side, diag='CsIStackSide', Invert=False)
-
-    CsIStackTop.plot_transmission_inferred(popt, measured_signal_summed_over_columns_Top, color_top, diag='CsIStackTop', Invert=True)
-    plt.show()
+    predicted_signal_summed_over_columns=CsIStack.calc_theoretical_Compton_signal_summed_over_columns(None, popt[0], popt[1])#, popt[2])
 
     Ec_arr.append(popt[0])
-    # predicted_signal_summed_over_columns_arr.append(predicted_signal_summed_over_columns)
+    predicted_signal_summed_over_columns_arr.append(predicted_signal_summed_over_columns)
+    measured_signal_summed_over_columns_arr.append(measured_signal_summed_over_columns)
 
-# Ec_arr, predicted_signal_summed_over_columns_arr, measured_signal_summed_over_columns_arr=np.asarray(Ec_arr), np.asarray(predicted_signal_summed_over_columns_arr), np.asarray(measured_signal_summed_over_columns_arr)
-# mean_Ec, std_Ec=np.mean(Ec_arr), np.std(Ec_arr)
-# mean_predicted_signal_summed_over_columns, std_predicted_signal_summed_over_columns=np.mean(predicted_signal_summed_over_columns_arr, axis=0), np.std(predicted_signal_summed_over_columns_arr, axis=0)
-# mean_measured_signal_summed_over_columns, std_measured_signal_summed_over_columns=np.mean(measured_signal_summed_over_columns_arr, axis=0), np.std(measured_signal_summed_over_columns_arr, axis=0)
+Ec_arr, predicted_signal_summed_over_columns_arr, measured_signal_summed_over_columns_arr=np.asarray(Ec_arr), np.asarray(predicted_signal_summed_over_columns_arr), np.asarray(measured_signal_summed_over_columns_arr)
+mean_Ec, std_Ec=np.mean(Ec_arr), np.std(Ec_arr)
+mean_predicted_signal_summed_over_columns, std_predicted_signal_summed_over_columns=np.mean(predicted_signal_summed_over_columns_arr, axis=0), np.std(predicted_signal_summed_over_columns_arr, axis=0)
+mean_measured_signal_summed_over_columns, std_measured_signal_summed_over_columns=np.mean(measured_signal_summed_over_columns_arr, axis=0), np.std(measured_signal_summed_over_columns_arr, axis=0)
 
-#filter_nos=np.linspace(1, CsIStackSide.N_crystals_X_cuttoff, CsIStackSide.N_crystals_X_cuttoff)
+filter_nos=np.linspace(1, CsIStack.N_crystals_X_cuttoff, CsIStack.N_crystals_X_cuttoff)
 
-# plt.plot(filter_nos, spec1, color='r', label="Ec =%s"%(Ec1))
-# plt.plot(filter_nos, spec2, color='b', label="Ec =%s"%(Ec2))
-# plt.plot(filter_nos, spec3, color='g', label="Ec =%s"%(Ec3))
-# plt.plot(filter_nos, spec4, color='orange', label="Ec =%s"%(Ec4))
-# plt.legend()
-# plt.show()
-
-
+print(filter_nos.shape)
+print(mean_measured_signal_summed_over_columns.shape)
 #plt.plot(filter_nos, predicted_signal_summed_over_columns, color='r')
-# plt.scatter(filter_nos, mean_measured_signal_summed_over_columns, color='b')
-# plt.vlines(filter_nos, mean_measured_signal_summed_over_columns-std_measured_signal_summed_over_columns, mean_measured_signal_summed_over_columns+std_measured_signal_summed_over_columns, color='b', alpha=0.5)
-# plt.plot(filter_nos, predicted_signal_summed_over_columns, color='r', label="Ec=%s"%(round(popt_normed[0], 3)))
-# plt.fill_between(filter_nos, predicted_signal_summed_over_columns-std_predicted_signal_summed_over_columns, predicted_signal_summed_over_columns+std_predicted_signal_summed_over_columns, color='r', alpha=0.5)
-# plt.xlabel('Filter numbers')
-# plt.ylabel('Normalised counts')
-# plt.title('%s '%diag)
-# plt.legend()
-# plt.tight_layout()
-# #plt.savefig("Brems calib run fitted vs measured signal %s.png"%diag)
-# plt.show()
+plt.scatter(filter_nos, mean_measured_signal_summed_over_columns, color='b')
+plt.vlines(filter_nos, mean_measured_signal_summed_over_columns-std_measured_signal_summed_over_columns, mean_measured_signal_summed_over_columns+std_measured_signal_summed_over_columns, color='b', alpha=0.5)
+plt.plot(filter_nos, predicted_signal_summed_over_columns, color='r', label="Ec=%s$\pm$%s"%(round(mean_Ec, 3), round(std_Ec, 3)))
+plt.fill_between(filter_nos, predicted_signal_summed_over_columns-std_predicted_signal_summed_over_columns, predicted_signal_summed_over_columns+std_predicted_signal_summed_over_columns, color='r', alpha=0.5)
+plt.xlabel('Filter numbers')
+plt.ylabel('Normalised counts')
+plt.title('%s '%diag)
+plt.legend()
+plt.tight_layout()
+#plt.savefig("Brems calib run fitted vs measured signal %s.png"%diag)
+plt.show()
 
 '''
 # Brems fitting??? Unfinished

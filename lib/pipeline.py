@@ -63,7 +63,7 @@ class DataPipeline:
            pair. This only works if the data is 1-dimensional
 
         """
-
+        print(run_name)
         data_ids, paths = self.list_data(run_name, burst_num)
 
         if parallel == 'thread':
