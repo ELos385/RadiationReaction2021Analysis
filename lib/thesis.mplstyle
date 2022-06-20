@@ -1,0 +1,14 @@
+axes.titlesize : 22
+axes.labelsize : 20
+lines.linewidth : 1.5
+lines.markersize : 8
+xtick.labelsize : 16
+ytick.labelsize : 16
+legend.fontsize : 14
+font.family:  serif
+font.style:   normal
+font.variant: normal
+font.weight:  normal
+font.stretch: normal
+font.serif: Times New Roman
+mathtext.fontset: dejavuserif
