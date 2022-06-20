@@ -112,7 +112,6 @@ class Laser:
 
     def calc_waist(self, z, w0, M, z0):
         waist=(w0**2+M**4*(self.l0/(np.pi*w0))**2*(z-z0)**2)**0.5#w0*np.sqrt(1.0+(((z-focal_pos_z)/Zr)*((z-focal_pos_z)/Zr)))
-        print("waist=%s"%waist)
         return waist
 
     def calc_Raleigh_Range(self, w0):

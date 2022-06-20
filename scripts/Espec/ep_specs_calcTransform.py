@@ -12,8 +12,10 @@ from scipy.sparse import diags
 from lib.general_tools import *
 from setup import *
 
+plt.style.use('/Users/ee.los/.matplotlib/mpl_configdir/thesis.mplstyle')
+
 def espec_warp(img, tform):
-    """written so can apply any tForm 
+    """written so can apply any tForm
     """
     imgArea0=tform['imgArea0']
     H=tform['H']
@@ -32,17 +34,17 @@ def espec_warp(img, tform):
 #%%
 # CC (18-05-21) edit on Jupyter Notebook
 
-# get a reference shot to see where physical values (ruler markings) are 
+# get a reference shot to see where physical values (ruler markings) are
 # relative to pixels in captured image
-    
+
 # mark points for calculating transform
-    
+
 diag = 'espec1'
 from espec_ref_files import espec1_ref_files, espec2_ref_files
 espec_ref_files = espec1_ref_files
 ref_files = []
 
-date = '20210622'
+date = '20210427'
 
 
 for run in espec_ref_files[date]:
@@ -80,15 +82,21 @@ imgP_pix_real = np.array([[1243, 104], [10, 0],
 imgP_pix, imgP_real =  imgP_pix_real[::2], imgP_pix_real[1::2]
 
 plt.figure()
-plt.imshow(img, vmax=7000)
+im1=plt.imshow(img)#, vmax=10000)
 plt.title('%s' % (date))
 plt.plot(imgP_pix[:,0],imgP_pix[:,1],'r+')
+plt.xlabel('Pixels in x')
+plt.ylabel('Pixels in y')
+cb=plt.colorbar(im1)
+cb.set_label('Counts on CCD', rotation=270, labelpad=20)
+plt.tight_layout()
+plt.show()
 
 #%%
 
 # size of physical range covered in picture
 # nominal values to cover the lanex only would be to
-xRange, yRange = 300, 76.5 
+xRange, yRange = 330.0, 200.0#300, 76.5
 
 #xRange =400
 #yRange = 106
@@ -98,8 +106,8 @@ Nx_new = 4000
 Ny_new = 960
 
 # spacing between edge of lanex screen and edge of physical range requested
-# if you have just requested the lanex screen, then nominal values would be 
-x0, y0 = 0, 0
+# if you have just requested the lanex screen, then nominal values would be
+x0, y0 = -10, -50#0, 0
 
 #x0 = -50
 #y0 = -15
@@ -135,7 +143,15 @@ imgCountsPerArea = img/imgArea0
 
 im_out = cv2.warpPerspective(imgCountsPerArea, H, (Nx_new,Ny_new))*dx*dy
 
-tForm = {  
+# plt.figure()
+# #im_out2=espec_warp(img, tForm)
+# im=plt.imshow(im_out)#,extent= (np.min(x_mm), np.max(x_mm), np.max(y_mm), np.min(y_mm)))
+# #plt.plot(imgP_real[:,0],imgP_real[:,1],'r+')
+# #plt.title('%s- Transformed' % (date))
+# plt.colorbar(im)
+# plt.show()
+
+tForm = {
     'description': ' image transform',
     'H': H,
     'newImgSize':(Nx_new,Ny_new),
@@ -150,31 +166,35 @@ tForm = {
 
 plt.figure()
 im_out2=espec_warp(img, tForm)
-plt.imshow(im_out2,extent= (np.min(x_mm), np.max(x_mm), np.max(y_mm), np.min(y_mm)))
+im=plt.imshow(im_out2,extent= (np.min(x_mm), np.max(x_mm), np.max(y_mm), np.min(y_mm)))
 plt.plot(imgP_real[:,0],imgP_real[:,1],'r+')
 plt.title('%s- Transformed' % (date))
-
+cb=plt.colorbar(im)
+cb.set_label('Counts on CCD', rotation=270, labelpad=10)
+plt.xlabel("x (mm)")
+plt.ylabel("y (mm)")
+plt.tight_layout()
 
 #%%
 # save transform file if happy
 
 # desired tform details
-fname_diag = diag #+ '_big'
-date = date
-run = 'run01'
-shot = 'shot001'
-
-tForm_filedir = HOME + '/calib/' + diag + '/'
-tForm_filename = '%s_transform_%s_%s_%s.pkl' % (fname_diag, date, run, shot)
-tForm_filepath = tForm_filedir + tForm_filename
-
-check = input("Save tform file as %s \nin %s \ny or n? " % (tForm_filename, tForm_filedir))
-
-if check=='y':
-    save_object(tForm, tForm_filepath)
-    print('saved: ', tForm_filepath)
-else:
-    print('not saved.')
+# fname_diag = diag #+ '_big'
+# date = date
+# run = 'run08'
+# shot = 'shot004'
+#
+# tForm_filedir = HOME + '/calib/' + diag + '/'
+# tForm_filename = '%s_transform_%s_%s_%s.pkl' % (fname_diag, date, run, shot)
+# tForm_filepath = tForm_filedir + tForm_filename
+#
+# check = input("Save tform file as %s \nin %s \ny or n? " % (tForm_filename, tForm_filedir))
+#
+# if check=='y':
+#     save_object(tForm, tForm_filepath)
+#     print('saved: ', tForm_filepath)
+# else:
+#     print('not saved.')
 
 
 #%%

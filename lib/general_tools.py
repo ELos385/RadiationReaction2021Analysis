@@ -10,6 +10,8 @@ sys.path.append('../../')
 from setup import *
 
 from skimage.io import imread
+import cv2
+from skimage import measure
 
 from pathlib import Path
 DATA_PATH = Path(ROOT_DATA_FOLDER)
@@ -51,11 +53,11 @@ def calc_2D_4th_order_polyfit(X_interpolate, Y_interpolate, image_no_filters, x_
     X_fit, Y_fit=np.meshgrid(x_fit, y_fit)
 
     # best-fit quartic curve
-    A = np.c_[np.ones(X_interpolate.shape[0]), X_interpolate, Y_interpolate, X_interpolate**2, X_interpolate*Y_interpolate, Y_interpolate**2, X_interpolate**3, X_interpolate**2*Y_interpolate, X_interpolate*Y_interpolate**2, Y_interpolate**3, X_interpolate**4, X_interpolate**3*Y_interpolate, X_interpolate**2*Y_interpolate**2, X_interpolate*Y_interpolate**3, Y_interpolate**4]
+    A = np.c_[np.ones(X_interpolate.shape[0]), X_interpolate, Y_interpolate, X_interpolate**2, X_interpolate*Y_interpolate, Y_interpolate**2, X_interpolate**3, X_interpolate**2*Y_interpolate, X_interpolate*Y_interpolate**2, Y_interpolate**3]#, X_interpolate**4, X_interpolate**3*Y_interpolate, X_interpolate**2*Y_interpolate**2, X_interpolate*Y_interpolate**3, Y_interpolate**4]
     C,_,_,_ = lstsq(A, image_no_filters)
 
     # evaluate it on a grid
-    Z = C[0]+C[1]*X_fit+C[2]*Y_fit+C[3]*X_fit**2+C[4]*X_fit*Y_fit+C[5]*Y_fit**2+C[6]*X_fit**3+C[7]*X_fit**2*Y_fit+C[8]*X_fit*Y_fit**2+C[9]*Y_fit**3+C[10]*X_fit**4+C[11]*X_fit**3*Y_fit+C[12]*X_fit**2*Y_fit**2+C[13]*X_fit*Y_fit**3+C[14]*Y_fit**4
+    Z = C[0]+C[1]*X_fit+C[2]*Y_fit+C[3]*X_fit**2+C[4]*X_fit*Y_fit+C[5]*Y_fit**2+C[6]*X_fit**3+C[7]*X_fit**2*Y_fit+C[8]*X_fit*Y_fit**2+C[9]*Y_fit**3#+C[10]*X_fit**4+C[11]*X_fit**3*Y_fit+C[12]*X_fit**2*Y_fit**2+C[13]*X_fit*Y_fit**3+C[14]*Y_fit**4
 
     return Z, X_fit, Y_fit
 
@@ -163,7 +165,7 @@ def is_arg1_geq_arg2(dt_shot_run_tup1,dt_shot_run_tup2):
     return answer
 
 def compute_percentile_from_dist(dist, axis, target_percentile):
-    
+
     div=10.0
     N=int(len(dist)/div)
     percentile, energy=np.zeros(N), np.zeros(N)
@@ -230,6 +232,39 @@ def get_file_path(diag,run_name,burst_number,shot_number=None,verbose=False):
 def normalise(I):
     return I/np.max(np.abs(I))
 
+def create_mask(image, blob_size, threshold, rep):#threshold=60
+	# blur image slightly and threshold it
+	blurred = cv2.GaussianBlur(image, (11, 11), 0)
+	thresh = cv2.threshold(blurred, threshold, rep, cv2.THRESH_BINARY)[1]#image 58, 43
+	#thresh = cv2.erode(thresh, None, iterations=iter)#image 58, iter=20
+
+	# perform a connected component analysis on the thresholded
+	# image, then initialize a mask to store only the "large"
+	# components
+	labels = measure.label(thresh, connectivity=2, background=0)
+	mask = np.zeros(thresh.shape, dtype=float)
+
+	# loop over the unique components
+	for label in np.unique(labels):
+		# if this is the background label, ignore it
+		if label == 0:
+			continue
+
+		# otherwise, construct the label mask and count the
+		# number of pixels
+		labelMask = np.zeros(thresh.shape, dtype=float)
+		labelMask[labels == label] = rep
+		numPixels = cv2.countNonZero(labelMask)
+
+		# if the number of pixels in the component is sufficiently
+		# large, then add it to our mask of "large blobs"
+		if numPixels > blob_size:
+			mask = cv2.add(mask, labelMask)
+	#
+	# labels2 = measure.label(mask, neighbors=8, background=0)
+	# label2, unique_indx, unique_counts=np.unique(labels2, return_index=True, return_counts=True)#index(np.unique(labels2))
+
+	return mask#, labels2, label2
 
 
 class  Read_SQL_shot_summary:

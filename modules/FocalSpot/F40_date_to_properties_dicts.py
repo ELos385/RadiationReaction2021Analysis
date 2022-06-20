@@ -36,8 +36,16 @@ F40_date_to_run_dict={
 
 F40_date_to_FWHM_t_dict={
 20210607:[44.0*10**-15, 1.0*10**-15],
-20210608:[44.0*10**-15, 1.0*10**-15],
+20210608:[100.0*10**-15, 1.0*10**-15],
+20210609:[59.52*10**-15, 2.5*10**-15],
+20210614:[59.52*10**-15, 2.5*10**-15],
+20210617:[59.52*10**-15, 2.5*10**-15],
+20210618:[59.52*10**-15, 2.5*10**-15],
+20210620:[59.52*10**-15, 2.5*10**-15],
+20210621:[59.52*10**-15, 2.5*10**-15],
+20210622:[59.52*10**-15, 2.5*10**-15]
 }
+
 
 #these are approximate: from ecat2
 F40_date_to_south_energy_dict={
@@ -50,8 +58,8 @@ F40_date_to_south_energy_dict={
 #North: 47.2222% including effect of pellicle & holey oap
 # get final numbers from Matt: not in lab book for some reason.
 F40_date_to_south_thoughput_dict={#including pellicle and holey f2 parabola
-20210607:[0.59, 0.01],
-20210608:[0.59, 0.01]
+20210607:[0.6204, 0.01],
+20210608:[0.6204, 0.01]
 }
 
 
