@@ -6,21 +6,26 @@ sys.path.append('../')
 from lib.general_tools import *
 
 
-date='20210620'#'20210604'
+date='20210604'#'20210604'
 in_filepath='/Volumes/Seagate Expansion Drive/Radiation_Reaction_2021/Analysis/GammaSpec/Bayesian Inference/%s/'%(date)
 files=os.listdir(in_filepath)
 print(files)
 GSN_dict={}
 GSN_date_dict={
 '20210604':[283366, 284708],
-'20210620':[293611, 295697]}
+'20210620':[293611, 295698]}
 
 GSN_arr=np.arange(GSN_date_dict[date][0], GSN_date_dict[date][1])
 
-file_path_GSN='/Volumes/Seagate Expansion Drive/Radiation_Reaction_2021/Laser_energies_ECAT/%s.csv'%(date)
+file_path_GSN='/Volumes/Seagate Expansion Drive/Radiation_Reaction_2021/GSNs_ECAT/%s.csv'%(date)
 data=pd.read_csv(file_path_GSN)
 Ids=np.array(data['Id'])[::-1]
 times=np.array(data['Time'])[::-1]
+
+print(Ids[0])
+print(Ids.shape)
+print(times.shape)
+print(GSN_arr.shape)
 
 times=times[(Ids>=GSN_date_dict[date][0])&(Ids<=GSN_date_dict[date][1])]
 Ids=Ids[(Ids>=GSN_date_dict[date][0])&(Ids<=GSN_date_dict[date][1])]
@@ -35,6 +40,9 @@ for i in range(0, len(files)):
     run_dict['Shot numbers']=kes
     run_dict['GSN']=GSN_arr[shots_before_run:shots_before_run+len(kes)]
     run_dict['Time']=times[shots_before_run:shots_before_run+len(kes)]
+    print(len(kes))
+    print(len(times[shots_before_run:shots_before_run+len(kes)]))
+    print(len(GSN_arr[shots_before_run:shots_before_run+len(kes)]))
     GSN_dict[run]=run_dict
     shots_before_run+=len(kes)
 
