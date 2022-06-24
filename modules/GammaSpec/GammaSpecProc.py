@@ -5,10 +5,10 @@ import scipy.optimize as opt
 import math
 import matplotlib
 import matplotlib.pyplot as plt
-import cv2
+#import cv2
 from scipy.special import kv, kn, expi
-import emcee
-import corner
+#import emcee
+#import corner
 from scipy.ndimage import median_filter, rotate
 from scipy.io import loadmat
 from scipy.stats import norm

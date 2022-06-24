@@ -10,7 +10,7 @@ sys.path.append('../../')
 from setup import *
 
 from skimage.io import imread
-import cv2
+#import cv2
 from skimage import measure
 
 from pathlib import Path
