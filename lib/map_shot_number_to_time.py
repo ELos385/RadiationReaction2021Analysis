@@ -6,7 +6,7 @@ sys.path.append('../')
 from lib.general_tools import *
 
 
-date='20210604'#'20210604'
+date='20210620'#'20210604'
 in_filepath='/Volumes/Seagate Expansion Drive/Radiation_Reaction_2021/Analysis/GammaSpec/Bayesian Inference/%s/'%(date)
 files=os.listdir(in_filepath)
 print(files)
@@ -40,12 +40,14 @@ for i in range(0, len(files)):
     run_dict['Shot numbers']=kes
     run_dict['GSN']=GSN_arr[shots_before_run:shots_before_run+len(kes)]
     run_dict['Time']=times[shots_before_run:shots_before_run+len(kes)]
+
     print(len(kes))
     print(len(times[shots_before_run:shots_before_run+len(kes)]))
     print(len(GSN_arr[shots_before_run:shots_before_run+len(kes)]))
     GSN_dict[run]=run_dict
     shots_before_run+=len(kes)
 
+    print(run)
     print(run_dict['Shot numbers'][0])
     print(run_dict['Shot numbers'][-1])
     print(run_dict['GSN'][0])
